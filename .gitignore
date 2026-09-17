@@ -1,7 +1,5 @@
-.env
-target/
-
-
-# Added by cargo
-
 /target
+.env
+/maps/cache/
+*.png
+*.json

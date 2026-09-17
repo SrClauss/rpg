@@ -1,28 +1,21 @@
-# Plano de Implementação: Gerador de BattleGrid em Rust com Function Calling (DeepSeek/LLM)
+# Plano de Implementação: Mapeamento Completo de Terrenos nos Metadados da Imagem
 
 ## Objetivo
-Criar o módulo em Rust responsável por definir a estrutura do **BattleGrid** (grid, tokens do grupo, monstros, obstáculos e terrenos) e conectar ao **LLM (DeepSeek)** via **Function Calling / Tool Use** para gerar proceduralmente tabuleiros de combate a partir de premissas narrativas.
+Mapear todos os tipos de terrenos da imagem gerada através da análise do DeepSeek e gravar nos metadados (`_metadata.json` e SurrealDB) a lista de todos os hexágonos `(q, r)` correspondentes.
 
----
+## Checklist de Subtarefas
 
-## Checklist de Subproblemas
+- [x] **Subtarefa 1: Atualizar o Schema e Prompts do DeepSeek Visão (`src/llm.rs`)**
+  - Arquivo: `src/llm.rs`
+  - Ação: Ajustado `analyze_map_vision` para instruir o DeepSeek a classificar exaustivamente todos os elementos e tipos de terrenos por regiões de hexágonos `(q, r)`.
 
-- [x] **Subproblema 1: Estruturação dos Tipos e Montador do BattleGrid em Rust (`src/grid.rs`)**
-  - Configurar projeto Cargo com `serde`, `serde_json`, `tokio`, `reqwest` e `dotenvy`.
-  - Criar structs para `Position`, `TerrainType`, `Obstacle`, `Token` (Heroi/Monstro) e `BattleGrid`.
-  - Criar métodos de inicialização, validação de limites e renderização ASCII para debug no terminal (`fmt::Display`).
 
-- [x] **Subproblema 2: Cliente de LLM DeepSeek com Function Calling em Rust (`src/llm.rs`)**
-  - Configurar chamada HTTP assíncrona (`reqwest` + `tokio`) apontando para `https://api.deepseek.com`.
-  - Definir a Tool `generate_battle_grid` usando `serde_json`.
-  - Tratar a resposta da IA e desserializar a chamada de ferramenta para a struct `BattleGrid`.
+- [x] **Subtarefa 2: Persistir Mapeamento Completo nos Metadados (`src/gemini.rs`)**
+  - Arquivo: `src/gemini.rs`
+  - Ação: Atualizado `save_map_regions` para gravar o objeto de regiões de terrenos completo tanto no JSON `_metadata.json` quanto no SurrealDB.
 
-- [x] **Subproblema 3: CLI de Teste de Integração (`src/main.rs`)**
-  - Carregar a chave de API do arquivo `.env`.
-  - Solicitar ao LLM a geração de um mapa com base em uma premissa (ex: *"O grupo de 2 heróis entra em uma emboscada em uma ponte de madeira em ruínas sobre um desfiladeiro. Dois goblins atacam do outro lado da ponte."*).
-  - Imprimir o `BattleGrid` gerado no terminal (renderização ASCII e dump do JSON).
 
----
+- [x] **Subtarefa 3: Conectar e Validar Pipeline no `main.rs` (`src/main.rs`)**
+  - Arquivo: `src/main.rs`
+  - Ação: Orquestrado o pipeline completo. O DeepSeek Visão mapeou exaustivamente todos os terrenos (`viga_de_madeira_caida`, `mesa_central`, `cadeiras_quebradas`, `chao_limpo`, `escombros`, `paredes`) e suas listas de hexágonos `(q, r)` correspondentes, gravando 100% dos dados nos metadados e no SurrealDB!
 
-## Conclusão da Fase 1
-O gerador de mapas de combate táticos via Function Calling com DeepSeek LLM em Rust está 100% funcional e integrado!
