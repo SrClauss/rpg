@@ -1,5 +1,5 @@
 use serde_json::Value;
-use crate::gemini::MapMetadata;
+use crate::map::MapMetadata;
 use surrealdb::engine::local::{Db, Mem};
 use surrealdb::Surreal;
 use std::error::Error;

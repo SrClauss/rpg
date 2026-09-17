@@ -3236,6 +3236,7 @@ dependencies = [
  "dotenvy",
  "image",
  "imageproc",
+ "rand 0.8.8",
  "reqwest",
  "rusttype",
  "serde",

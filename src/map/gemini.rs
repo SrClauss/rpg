@@ -163,7 +163,8 @@ impl GeminiClient {
         println!("      -> Imagem Original salva em: {}", original_path);
 
         println!("      -> Desenhando overlay do Grid Hexagonal em Rust...");
-        let grid_overlay_bytes = crate::overlay::draw_hex_grid_overlay(&image_bytes, width_hexes, height_hexes)?;
+        let grid_overlay_bytes = crate::map::overlay::draw_hex_grid_overlay(&image_bytes, width_hexes, height_hexes)?;
+
         fs::write(&grid_path, &grid_overlay_bytes).await?;
         println!("      -> Imagem Gradeada salva em: {}", grid_path);
 

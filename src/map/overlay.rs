@@ -49,7 +49,7 @@ pub fn draw_hex_grid_overlay(
                 let angle_rad = (60.0 * i as f32 - 30.0).to_radians();
                 let vx = center_x + hex_radius * angle_rad.cos();
                 let vy = center_y + hex_radius * angle_rad.sin();
-                vertices.push((vx as f32, vy as f32));
+                vertices.push((vx, vy));
             }
 
             // Desenha as 6 arestas do hexágono
@@ -59,8 +59,8 @@ pub fn draw_hex_grid_overlay(
 
                 draw_line_segment_mut(
                     &mut img,
-                    (x1 as f32, y1 as f32),
-                    (x2 as f32, y2 as f32),
+                    (x1, y1),
+                    (x2, y2),
                     grid_color,
                 );
             }

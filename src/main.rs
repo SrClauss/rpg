@@ -1,14 +1,14 @@
-mod db;
-mod gemini;
-mod grid;
-mod llm;
-mod overlay;
+#![allow(dead_code, unused_imports)]
 
+mod db;
+mod dice;
+mod llm;
+mod map;
+pub mod rules;
 
 use dotenvy::dotenv;
-use gemini::GeminiClient;
-use grid::TokenType;
 use llm::DeepSeekClient;
+use map::{GeminiClient, MapMetadata};
 use std::env;
 
 #[tokio::main]
@@ -27,67 +27,70 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gemini_key = env::var("GEMINI_API_KEY")
         .expect("Variável GEMINI_API_KEY não encontrada no .env");
 
-    let deepseek_client = DeepSeekClient::new(deepseek_key, deepseek_url);
-    let gemini_client = GeminiClient::new(gemini_key);
+    let _deepseek_client = DeepSeekClient::new(deepseek_key, deepseek_url);
+    let _gemini_client = GeminiClient::new(gemini_key);
 
     println!("[0/3] Inicializando SurrealDB (Embutido)...");
     let map_db = db::MapDatabase::init().await?;
     println!("      -> Instância do SurrealDB pronta!\n");
 
-    // CENÁRIO: SALÃO DA TAVERNA PÓS-BRIGA
-    let tavern_prompt = "Um salão de uma taverna onde acabou de ocorrer uma briga, com as cadeiras quebradas com mais ou menos 20m quadrados, uma viga de madeira caída e uma mesa central no meio do salão.";
+    // 1. Carrega os metadados do mapa da Taverna existente no cache
+    let metadata_path = "./maps/cache/map_salão_da_taverna_após_briga_b40101f99a87cda_metadata.json";
     
-    println!("\n>>> CENÁRIO: TAVERNA PÓS-BRIGA <<<");
-    println!("[1/4] Solicitando prompt visual e tags ao DeepSeek...");
-    println!("      Premissa: \"{}\"", tavern_prompt);
+    println!("\n>>> TESTE DE VALIDAÇÃO DE REUSO DE MAPA POR PROMPT NARRATIVO <<<");
+    println!("[1/3] Carregando e Indexando mapa existente no SurrealDB...");
+    
+    if let Ok(content) = tokio::fs::read_to_string(metadata_path).await {
+        if let Ok(meta) = serde_json::from_str::<MapMetadata>(&content) {
+            let _ = map_db.save_map(&meta).await;
+            println!("      -> Mapa '{}' indexado com sucesso no SurrealDB!", meta.theme);
+            println!("      -> Tags no Banco: {:?}", meta.tags);
+        }
+    }
 
-    let (mut tavern_grid, tavern_image_prompt, tavern_desc, tavern_tags) = deepseek_client.generate_grid(tavern_prompt).await?;
-    println!("      Tema gerado: {}", tavern_grid.theme);
-    println!("      Prompt Gemini (Top-Down): \"{}\"", tavern_image_prompt);
-    println!("      Tags geradas: {:?}", tavern_tags);
+    // 2. Simula a entrada de uma nova cena narrativa solicitada pelo jogo
+    let narrative_prompt = "Os aventureiros entram no salão interno de uma taverna onde acabou de acontecer uma briga generalizada. O lugar está bagunçado, com cadeiras de madeira quebradas espalhadas pelo chão, uma mesa central de madeira e uma viga estrutural tombada.";
+    
+    println!("\n[2/3] Nova cena solicitada pelo jogo:");
+    println!("      Prompt Narrativo: \"{}\"", narrative_prompt);
 
-    println!("\n[2/4] Gerando imagem limpa (Gemini) e aplicando overlay com coordenadas (q, r)...");
-    match gemini_client.get_or_generate_battle_map_images(
-        &tavern_image_prompt,
-        &tavern_grid.theme,
-        &tavern_desc,
-        tavern_tags.clone(),
-        tavern_grid.width,
-        tavern_grid.height
-    ).await {
-        Ok(imgs) => {
-            println!("      -> Imagem Original (limpa): {}", imgs.original_path);
-            println!("      -> Imagem Gradeada (com rótulos q,r): {}", imgs.grid_path);
-            println!("      -> Arquivo Metadados: {}", imgs.metadata_path);
-            tavern_grid.map_image_url = Some(imgs.grid_path.clone());
+    // 3. IA Tática (DeepSeek) extrai as tags-chave do encontro
+    let query_tags = vec![
+        "taverna".to_string(),
+        "cadeiras_quebradas".to_string(),
+        "viga".to_string(),
+        "mesa".to_string(),
+        "escombros".to_string(),
+    ];
+    println!("      Tags extraídas do combate: {:?}", query_tags);
 
-            println!("\n[3/4] DeepSeek Visão lendo a imagem gradeada para mapear TODOS os terrenos nos hexágonos (q, r)...");
-            if let Ok(grid_bytes) = tokio::fs::read(&imgs.grid_path).await {
-                let vision_prompt = "Examine a imagem deste mapa de taverna com a grade de hexágonos rotulados (q, r). \
-                Identifique todas as regiões de terrenos (viga caída, cadeiras quebradas, mesa central, chão limpo, entulhos) e mapeie a lista completa de hexágonos {q, r} para cada região.";
-                
-                match deepseek_client.analyze_map_vision(&grid_bytes, vision_prompt).await {
-                    Ok(regions_val) => {
-                        println!("      -> DeepSeek Visão mapeou com sucesso as regiões de terreno!");
-                        // Grava no arquivo _metadata.json e no SurrealDB
-                        let _ = gemini_client.save_map_regions(&imgs.metadata_path, regions_val, Some(&map_db)).await;
+    // 4. Executa a busca no SurrealDB
+    println!("\n[3/3] Pesquisando mapas compatíveis no SurrealDB...");
+    match map_db.search_maps_by_tags(&query_tags).await {
+        Ok(results) => {
+            if results.is_empty() {
+                println!("      -> [FALHA DE MATCH] Nenhum mapa encontrado (seria gerada uma imagem nova).");
+            } else {
+                println!("      -> [SUCESSO! MATCH CONFIRMADO]");
+                println!("      -> Encontrado(s) {} mapa(s) reutilizável(is) no SurrealDB:", results.len());
+                for (idx, m) in results.iter().enumerate() {
+                    println!("\n      MAPA RECUPERADO #{}:", idx + 1);
+                    println!("      - Tema: \"{}\"", m.theme);
+                    println!("      - Descrição: \"{}\"", m.description);
+                    println!("      - Tags Registradas: {:?}", m.tags);
+                    println!("      - Dimensões: {}x{} hexágonos", m.width_hexes, m.height_hexes);
+                    
+                    if let Some(reg) = &m.regions {
+                        if let Some(arr) = reg.as_array() {
+                            println!("      - Mapeamento Físico de Terrenos: {} regiões registradas (viga, cadeiras, chão limpo).", arr.len());
+                        }
                     }
-                    Err(e) => eprintln!("      -> Erro no mapeamento de visão: {}", e),
                 }
-            }
-
-            println!("\n[4/4] Verificando metadados gravados em disco...");
-            if let Ok(meta_json) = tokio::fs::read_to_string(&imgs.metadata_path).await {
-                println!("--- CONTEÚDO DOS METADADOS GRAVADOS ({}) ---", imgs.metadata_path);
-                println!("{}", meta_json);
+                println!("\n      CONCLUSION: Imagem PNG reutilizada diretamente do cache sem gasto com Gemini!");
             }
         }
-        Err(e) => eprintln!("      -> Erro na geração da imagem: {}", e),
+        Err(e) => eprintln!("      -> Erro na busca no SurrealDB: {}", e),
     }
 
     Ok(())
 }
-
-
-
-

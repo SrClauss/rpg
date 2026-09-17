@@ -1,4 +1,4 @@
-use crate::grid::BattleGrid;
+use crate::map::BattleGrid;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::error::Error;

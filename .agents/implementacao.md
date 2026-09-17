@@ -1,21 +1,18 @@
-# Plano de Implementação: Mapeamento Completo de Terrenos nos Metadados da Imagem
+# Plano de Implementação: Passo 1 (Fundação Genérica Completa)
 
 ## Objetivo
-Mapear todos os tipos de terrenos da imagem gerada através da análise do DeepSeek e gravar nos metadados (`_metadata.json` e SurrealDB) a lista de todos os hexágonos `(q, r)` correspondentes.
+Finalizar a implementação do Passo 1 do Roadmap (Personagens Básicos), criando a infraestrutura mecânica para Perícias, Raças e Antecedentes, e integrando-os na Entidade principal com cálculos matemáticos corretos (Nível Total, Bônus de Proficiência e Modificadores Raciais).
 
-## Checklist de Subtarefas
-
-- [x] **Subtarefa 1: Atualizar o Schema e Prompts do DeepSeek Visão (`src/llm.rs`)**
-  - Arquivo: `src/llm.rs`
-  - Ação: Ajustado `analyze_map_vision` para instruir o DeepSeek a classificar exaustivamente todos os elementos e tipos de terrenos por regiões de hexágonos `(q, r)`.
-
-
-- [x] **Subtarefa 2: Persistir Mapeamento Completo nos Metadados (`src/gemini.rs`)**
-  - Arquivo: `src/gemini.rs`
-  - Ação: Atualizado `save_map_regions` para gravar o objeto de regiões de terrenos completo tanto no JSON `_metadata.json` quanto no SurrealDB.
-
-
-- [x] **Subtarefa 3: Conectar e Validar Pipeline no `main.rs` (`src/main.rs`)**
-  - Arquivo: `src/main.rs`
-  - Ação: Orquestrado o pipeline completo. O DeepSeek Visão mapeou exaustivamente todos os terrenos (`viga_de_madeira_caida`, `mesa_central`, `cadeiras_quebradas`, `chao_limpo`, `escombros`, `paredes`) e suas listas de hexágonos `(q, r)` correspondentes, gravando 100% dos dados nos metadados e no SurrealDB!
-
+## Checklist de Subproblemas
+- [x] **Subproblema 1: Implementar Perícias e Atributos (`src/rules/character/skills.rs`)**
+  - Mapear as 18 perícias oficiais no `enum Skill`.
+  - Criar o vínculo de cada perícia ao seu respectivo `Ability` base.
+- [x] **Subproblema 2: Implementar Raças Nativas (`src/rules/character/race.rs`)**
+  - Criar o `trait Race` e `enum Size`.
+  - Estruturar Humanos (+1 em tudo) e Elfos (+2 Destreza) em código puro Rust.
+- [x] **Subproblema 3: Implementar Antecedentes (`src/rules/character/background.rs`)**
+  - Estruturar proficiências mecânicas (Skills) concedidas por backgrounds.
+- [x] **Subproblema 4: Refatorar Entidade e Testes Finais (`src/rules/character/entity.rs`)**
+  - Adicionar as propriedades Race e Background à ficha de personagem.
+  - Implementar lógica matemática rigorosa (Bônus Racial aplicado antes da Vida Máxima e `proficiency_bonus`).
+  - Passar 100% da suíte de testes.
