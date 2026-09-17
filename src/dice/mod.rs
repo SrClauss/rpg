@@ -1,14 +1,15 @@
 use rand::Rng;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiceMode {
     Normal,
     Advantage,
     Disadvantage,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RollResult {
     pub rolls: Vec<i32>,
     pub selected_roll: i32,
@@ -18,7 +19,7 @@ pub struct RollResult {
     pub is_critical_fail: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Dice {
     pub sides: i32,
     pub quantity: u8,

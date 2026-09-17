@@ -4,6 +4,7 @@ use super::race::{RaceVariant, Race};
 use super::background::Background;
 use crate::rules::equipment::armor::Armor;
 use crate::rules::equipment::weapons::Weapon;
+use crate::rules::conditions::Condition;
 use serde::{Deserialize, Serialize};
 
 /// Representa a Ficha Base de qualquer personagem (Entity) no jogo
@@ -20,6 +21,7 @@ pub struct Entity {
     pub equipped_armor: Option<Armor>,
     pub equipped_shield: Option<Armor>,
     pub equipped_weapons: Vec<Weapon>,
+    pub active_conditions: Vec<Condition>,
 }
 
 impl Entity {
@@ -57,6 +59,7 @@ impl Entity {
             equipped_armor: None,
             equipped_shield: None,
             equipped_weapons: Vec::new(),
+            active_conditions: Vec::new(),
         }
     }
 
@@ -98,6 +101,28 @@ impl Entity {
         };
 
         base_ac + shield_bonus
+    }
+
+    /// Adiciona uma condição à entidade caso ela ainda não esteja ativa
+    pub fn add_condition(&mut self, condition: Condition) {
+        if !self.has_condition(&condition) {
+            self.active_conditions.push(condition);
+        }
+    }
+
+    /// Remove uma condição ativa da entidade
+    pub fn remove_condition(&mut self, condition: &Condition) {
+        self.active_conditions.retain(|c| c != condition);
+    }
+
+    /// Verifica se a entidade possui determinada condição
+    pub fn has_condition(&self, condition: &Condition) -> bool {
+        self.active_conditions.iter().any(|c| c == condition)
+    }
+
+    /// Verifica se a entidade está incapacitada por qualquer condição ativa
+    pub fn is_incapacitated(&self) -> bool {
+        self.active_conditions.iter().any(|c| c.is_incapacitating())
     }
 }
 
@@ -170,5 +195,28 @@ mod tests {
         // Plate + Shield (+2) = 20
         hero.equipped_shield = Some(create_shield());
         assert_eq!(hero.get_armor_class(), 20);
+    }
+
+    #[test]
+    fn test_entity_conditions() {
+        use crate::rules::conditions::Condition;
+
+        let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
+        let mut hero = Entity::new("Hero", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+
+        assert!(!hero.has_condition(&Condition::Poisoned));
+        assert!(!hero.is_incapacitated());
+
+        hero.add_condition(Condition::Poisoned);
+        assert!(hero.has_condition(&Condition::Poisoned));
+        assert!(!hero.is_incapacitated()); // Envenenado não incapacita por si só
+
+        hero.add_condition(Condition::Stunned);
+        assert!(hero.has_condition(&Condition::Stunned));
+        assert!(hero.is_incapacitated()); // Atordoado incapacita!
+
+        hero.remove_condition(&Condition::Stunned);
+        assert!(!hero.has_condition(&Condition::Stunned));
+        assert!(!hero.is_incapacitated());
     }
 }

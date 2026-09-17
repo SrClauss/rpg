@@ -38,16 +38,16 @@ Este documento mapeia os passos exatos para traduzir o livro de regras (SRD-OGL_
 ## Passo 3: O Motor de Regras (Combate e Testes)
 *Corresponde ao Livro: Capítulos 7, 9, e Apêndice A (Condições).*
 
-- [ ] **Capítulo 7: Usando Valores de Habilidade**
+- [x] **Capítulo 7: Usando Valores de Habilidade**
   - Implementar Testes de Habilidade (Ability Checks) e Testes de Resistência (Saving Throws) usando o módulo de dados.
   - Lógica de Vantagem e Desvantagem aninhada aos eventos.
-- [ ] **Capítulo 9: Combate (Combat)**
+- [x] **Capítulo 9: Combate (Combat)**
   - Sistema de Iniciativa e organização de turnos.
   - O ciclo de Ação: Ação Comum, Ação Bônus, Reação, Interação Livre.
   - Resolução de Ataque (`1d20 + Modificador + Proficiência` vs `CA`).
   - Acertos Críticos (dobrar dados de dano) e Falhas Críticas.
   - Implementação de Resistências, Imunidades e Vulnerabilidades a tipos de dano.
-- [ ] **Apêndice A: Condições (Conditions)**
+- [x] **Apêndice A: Condições (Conditions)**
   - Criar o sistema de "Efeitos de Status" (Ex: Cego impõe Desvantagem em ataques e dá Vantagem aos inimigos).
 
 ---
