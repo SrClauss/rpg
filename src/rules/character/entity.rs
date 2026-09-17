@@ -2,6 +2,8 @@ use super::attributes::AbilityScores;
 use super::class::ClassVariant;
 use super::race::{RaceVariant, Race};
 use super::background::Background;
+use crate::rules::equipment::armor::Armor;
+use crate::rules::equipment::weapons::Weapon;
 use serde::{Deserialize, Serialize};
 
 /// Representa a Ficha Base de qualquer personagem (Entity) no jogo
@@ -15,6 +17,9 @@ pub struct Entity {
     pub classes: Vec<ClassVariant>,
     pub race: RaceVariant,
     pub background: Background,
+    pub equipped_armor: Option<Armor>,
+    pub equipped_shield: Option<Armor>,
+    pub equipped_weapons: Vec<Weapon>,
 }
 
 impl Entity {
@@ -49,6 +54,9 @@ impl Entity {
             classes: vec![primary_class],
             race,
             background,
+            equipped_armor: None,
+            equipped_shield: None,
+            equipped_weapons: Vec::new(),
         }
     }
 
@@ -63,6 +71,33 @@ impl Entity {
     pub fn proficiency_bonus(&self) -> i32 {
         let lvl = self.total_level() as f32;
         (lvl / 4.0).ceil() as i32 + 1
+    }
+
+    /// Calcula dinamicamente a Classe de Armadura (CA) da Entidade.
+    /// Sem armadura: 10 + Modificador de Destreza.
+    /// Com armadura: CA Base da Armadura + Modificador de Destreza (respeitando limites da armadura).
+    /// Bônus de Escudo é somado se equipado.
+    pub fn get_armor_class(&self) -> i32 {
+        let dex_mod = self.attributes.dexterity.modifier() as i32;
+
+        let base_ac = match &self.equipped_armor {
+            Some(armor) => {
+                let applicable_dex = if armor.has_dex_limit {
+                    std::cmp::min(dex_mod, armor.dex_limit_max)
+                } else {
+                    dex_mod
+                };
+                armor.base_ac + applicable_dex
+            }
+            None => 10 + dex_mod,
+        };
+
+        let shield_bonus = match &self.equipped_shield {
+            Some(shield) => shield.base_ac,
+            None => 0,
+        };
+
+        base_ac + shield_bonus
     }
 }
 
@@ -107,5 +142,33 @@ mod tests {
         
         assert_eq!(hero.total_level(), 5);
         assert_eq!(hero.proficiency_bonus(), 3); // Nível 5 = +3
+    }
+
+    #[test]
+    fn test_armor_class_calculation() {
+        use crate::rules::equipment::armor::{create_leather_armor, create_chain_shirt, create_plate_armor, create_shield};
+
+        // Base DEX 16 (+3 bonus). Human adds +1 -> DEX 17 (+3 bonus).
+        let attrs = AbilityScores::new(10, 16, 10, 10, 10, 10);
+        let mut hero = Entity::new("Rogue", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+
+        // Unarmored: 10 + 3 = 13
+        assert_eq!(hero.get_armor_class(), 13);
+
+        // Light Armor (Leather 11 + 3 DEX = 14)
+        hero.equipped_armor = Some(create_leather_armor());
+        assert_eq!(hero.get_armor_class(), 14);
+
+        // Medium Armor (Chain Shirt 13 + DEX (max +2) = 15)
+        hero.equipped_armor = Some(create_chain_shirt());
+        assert_eq!(hero.get_armor_class(), 15);
+
+        // Heavy Armor (Plate 18 + DEX (max 0) = 18)
+        hero.equipped_armor = Some(create_plate_armor());
+        assert_eq!(hero.get_armor_class(), 18);
+
+        // Plate + Shield (+2) = 20
+        hero.equipped_shield = Some(create_shield());
+        assert_eq!(hero.get_armor_class(), 20);
     }
 }

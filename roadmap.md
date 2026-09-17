@@ -26,11 +26,11 @@ Este documento mapeia os passos exatos para traduzir o livro de regras (SRD-OGL_
 ## Passo 2: O Físico (Equipamento e Movimento)
 *Corresponde ao Livro: Capítulos 5, 8.*
 
-- [ ] **Capítulo 5: Equipamento (Equipment)**
+- [x] **Capítulo 5: Equipamento (Equipment)**
   - Tabela de Armas (Dano base, tipo de dano e Propriedades como *Acuidade*, *Pesada*).
   - Tabela de Armaduras e cálculo dinâmico da Classe de Armadura (CA = Base + Mod. DES limitado).
   - Sistema simples de peso e capacidade de carga (Opcional para a engine de batalha).
-- [ ] **Capítulo 8: Aventurando-se (Adventuring)**
+- [x] **Capítulo 8: Aventurando-se (Adventuring)**
   - Modelar Tipos de Movimento e Deslocamento, Dano de Queda e as regras de Descanso Longo e Curto (Recuperação de PV e Dados de Vida).
 
 ---
