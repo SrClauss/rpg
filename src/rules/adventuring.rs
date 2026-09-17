@@ -37,6 +37,9 @@ pub trait Restable {
 impl Restable for Entity {
     fn long_rest(&mut self) {
         self.current_hp = self.max_hp;
+        if let Some(slots) = &mut self.spell_slots {
+            slots.recover_all();
+        }
     }
 }
 

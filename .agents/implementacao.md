@@ -1,23 +1,17 @@
-# Plano de Implementação: Passo 3 (O Motor de Regras: Combate e Testes)
+# Plano de Implementação: Passo 4 (O Oculto: Magia)
 
 ## Objetivo
-Implementar o Passo 3 do Roadmap do D&D 5e: construir o motor de regras de combate e testes, cobrindo Testes de Habilidade e Resistência, Sistema de Condições, Resolução de Ataques com Resistências/Vulnerabilidades e Gerenciador de Iniciativa e Turnos.
+Implementar o Passo 4 do Roadmap do D&D 5e: construir o sistema de magia e conjuração (Spellcasting), cobrindo a modelagem de magias do SRD, gerenciamento de Espaços de Magia (Spell Slots), sistema de Concentração e o motor de resolução de conjurações.
 
 ## Checklist de Subproblemas
-- [x] **Subproblema 1: Testes de Habilidade e Resistência (`src/rules/checks.rs`)**
-  - Implementar estrutura e métodos para Testes de Habilidade (Ability Checks) e Salvaguardas (Saving Throws).
-  - Integrar com o sistema de dados (`Roller`) aceitando `AdvantageState`.
-  - Aplicar modificador de habilidade e bônus de proficiência quando aplicável.
-- [x] **Subproblema 2: Sistema de Condições (`src/rules/conditions.rs`)**
-  - Modelar o enum `Condition` com as condições do SRD (Cego, Caído, Envenenado, Incapacitado, etc.).
-  - Adicionar suporte a condições ativas na `Entity`.
-- [x] **Subproblema 3: Resolução de Ataques e Dano (`src/rules/combat/attack.rs`)**
-  - Implementar a mecânica de ataque (`1d20 + Mod + Prof` vs `CA`).
-  - Tratar Acerto Crítico (20 natural) e Falha Crítica (1 natural).
-  - Calcular dano (dobrar dados no crítico) e aplicar Resistências, Imunidades e Vulnerabilidades a tipos de dano.
-- [x] **Subproblema 4: Iniciativa e Ordem de Turnos (`src/rules/combat/initiative.rs`)**
-  - Implementar a rolagem de iniciativa (`1d20 + Mod. DES`) para combatentes.
-  - Ordenar a fila de iniciativa e gerenciar avanços de turno e rodadas.
+- [x] **Subproblema 1: Estrutura Base de Magias (`src/rules/spells/spell.rs`)**
+  - Definir o modelo `Spell` contendo nível (0-9), escola de magia, alcance, tempo de conjuração, componentes (V, S, M), duração e flag de concentração.
+  - Definir tipos de efeito de magia (Dano, Cura, Salvaguarda vs CD, Ataque Mágico).
+- [x] **Subproblema 2: Espaços de Magia e Concentração (`src/rules/spells/spellcaster.rs`)**
+  - Adicionar o gerenciamento de Espaços de Magia (`SpellSlots`) por nível (slots máximos e disponíveis) na `Entity`.
+  - Implementar rastreamento de Concentração ativa e teste de Salvaguarda de Constituição (DC = max(10, dano / 2)) ao sofrer dano.
+- [x] **Subproblema 3: Motor de Resolução de Conjuração (`src/rules/spells/casting.rs`)**
+  - Implementar o método `cast_spell`: validação de slots/componentes, consumo de slot, cálculo da DC de Salvaguarda de Magia (`8 + Prof + Mod`) ou Bônus de Ataque Mágico, e aplicação dos efeitos/dano no alvo.
 
 ## Ponto de Partida
-**Sugiro começarmos pelo Subproblema 1 (Testes de Habilidade e Resistência)**, pois ele estabelece a mecânica fundamental de rolagens com modificadores e proficiências que alimentará tanto os testes genéricos quanto os testes de salvaguarda de combate.
+**Sugiro começarmos pelo Subproblema 1 (Estrutura Base de Magias)**, pois criar os tipos de dados e representações de magias do SRD fornecerá a base necessária para que o gerenciador de slots e o motor de conjuração operem.

@@ -5,6 +5,7 @@ use super::background::Background;
 use crate::rules::equipment::armor::Armor;
 use crate::rules::equipment::weapons::Weapon;
 use crate::rules::conditions::Condition;
+use crate::rules::spells::spellcaster::{SpellSlots, ActiveConcentration};
 use serde::{Deserialize, Serialize};
 
 /// Representa a Ficha Base de qualquer personagem (Entity) no jogo
@@ -22,6 +23,8 @@ pub struct Entity {
     pub equipped_shield: Option<Armor>,
     pub equipped_weapons: Vec<Weapon>,
     pub active_conditions: Vec<Condition>,
+    pub spell_slots: Option<SpellSlots>,
+    pub active_concentration: Option<ActiveConcentration>,
 }
 
 impl Entity {
@@ -60,6 +63,8 @@ impl Entity {
             equipped_shield: None,
             equipped_weapons: Vec::new(),
             active_conditions: Vec::new(),
+            spell_slots: None,
+            active_concentration: None,
         }
     }
 

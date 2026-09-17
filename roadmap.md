@@ -55,11 +55,11 @@ Este documento mapeia os passos exatos para traduzir o livro de regras (SRD-OGL_
 ## Passo 4: O Oculto (Magia)
 *Corresponde ao Livro: Capítulos 10 e 11.*
 
-- [ ] **Capítulo 10: Conjuração (Spellcasting)**
+- [x] **Capítulo 10: Conjuração (Spellcasting)**
   - Gestão de Espaços de Magia (Spell Slots).
   - Regras de Componentes (V, S, M).
   - Sistema de Concentração (Teste de Resistência de Constituição ao tomar dano).
-- [ ] **Capítulo 11: Magias (Spells)**
+- [x] **Capítulo 11: Magias (Spells)**
   - Criação da estrutura de dados (JSON/SurrealDB) das magias do SRD.
   - Motor de Eventos para aplicar os efeitos numéricos das magias no combate (Áreas de efeito, Dificuldade de Magia, Danos e Buffs).
 
