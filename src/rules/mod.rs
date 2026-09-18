@@ -5,3 +5,5 @@ pub mod checks;
 pub mod conditions;
 pub mod combat;
 pub mod spells;
+pub mod monsters;
+

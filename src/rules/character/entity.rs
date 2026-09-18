@@ -1,9 +1,9 @@
 use super::attributes::AbilityScores;
 use super::class::ClassVariant;
-use super::race::{RaceVariant, Race};
+use super::race::{RaceVariant, Race, Size};
 use super::background::Background;
 use crate::rules::equipment::armor::Armor;
-use crate::rules::equipment::weapons::Weapon;
+use crate::rules::equipment::weapons::{Weapon, DamageType};
 use crate::rules::conditions::Condition;
 use crate::rules::spells::spellcaster::{SpellSlots, ActiveConcentration};
 use serde::{Deserialize, Serialize};
@@ -128,6 +128,44 @@ impl Entity {
     /// Verifica se a entidade está incapacitada por qualquer condição ativa
     pub fn is_incapacitated(&self) -> bool {
         self.active_conditions.iter().any(|c| c.is_incapacitating())
+    }
+
+    // --- Métodos de Traços Raciais ---
+
+    pub fn speed(&self) -> u8 {
+        self.race.as_trait().get_speed()
+    }
+
+    pub fn size(&self) -> Size {
+        self.race.as_trait().get_size()
+    }
+
+    pub fn has_darkvision(&self) -> bool {
+        self.race.as_trait().has_darkvision()
+    }
+
+    pub fn has_fey_ancestry(&self) -> bool {
+        self.race.as_trait().has_fey_ancestry()
+    }
+
+    pub fn has_lucky(&self) -> bool {
+        self.race.as_trait().has_lucky()
+    }
+
+    pub fn has_gnome_cunning(&self) -> bool {
+        self.race.as_trait().has_gnome_cunning()
+    }
+
+    pub fn has_relentless_endurance(&self) -> bool {
+        self.race.as_trait().has_relentless_endurance()
+    }
+
+    pub fn get_damage_resistances(&self) -> Vec<DamageType> {
+        self.race.as_trait().get_damage_resistances()
+    }
+
+    pub fn get_racial_traits_summary(&self) -> Vec<String> {
+        self.race.as_trait().get_traits_summary()
     }
 }
 

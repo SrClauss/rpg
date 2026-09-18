@@ -1,17 +1,30 @@
-# Plano de Implementação: Passo 4 (O Oculto: Magia)
+# Plano de Implementação: Raças do SRD (Páginas 3 a 7) e Traços Raciais
 
 ## Objetivo
-Implementar o Passo 4 do Roadmap do D&D 5e: construir o sistema de magia e conjuração (Spellcasting), cobrindo a modelagem de magias do SRD, gerenciamento de Espaços de Magia (Spell Slots), sistema de Concentração e o motor de resolução de conjurações.
+Implementar nativamente em Rust todas as 9 raças e subraças do SRD 5.1 (páginas 3 a 7), expandindo o `trait Race` e a `Entity` para expor **todos os benefícios, resistências a dano, vantagens em salvaguardas (Darkvision, Fey Ancestry, Gnome Cunning, Relentless Endurance, Lucky, etc.)**.
+
+## Métodos Expandidos do `trait Race`
+- `get_speed(&self) -> u8`
+- `get_size(&self) -> Size`
+- `get_ability_score_increases(&self) -> Vec<(Ability, i8)>`
+- `has_darkvision(&self) -> bool`
+- `has_fey_ancestry(&self) -> bool` (Vantagem vs Encantamento, imunidade a Sono mágico)
+- `has_lucky(&self) -> bool` (Pequenino: rola novamente 1s naturais)
+- `has_gnome_cunning(&self) -> bool` (Gnomo: Vantagem em Salvaguardas INT/SAB/CAR vs Magia)
+- `has_relentless_endurance(&self) -> bool` (Meio-Orc: Sobrevive a 0 HP com 1 HP uma vez/descanso)
+- `get_damage_resistances(&self) -> Vec<DamageType>` (Resistências raciais: Anão -> Veneno, Tiefling -> Fogo, Draconato -> Elemento ancestral)
+- `get_traits_summary(&self) -> Vec<String>` (Lista textual dos traços para o contexto da IA e Ficha)
 
 ## Checklist de Subproblemas
-- [x] **Subproblema 1: Estrutura Base de Magias (`src/rules/spells/spell.rs`)**
-  - Definir o modelo `Spell` contendo nível (0-9), escola de magia, alcance, tempo de conjuração, componentes (V, S, M), duração e flag de concentração.
-  - Definir tipos de efeito de magia (Dano, Cura, Salvaguarda vs CD, Ataque Mágico).
-- [x] **Subproblema 2: Espaços de Magia e Concentração (`src/rules/spells/spellcaster.rs`)**
-  - Adicionar o gerenciamento de Espaços de Magia (`SpellSlots`) por nível (slots máximos e disponíveis) na `Entity`.
-  - Implementar rastreamento de Concentração ativa e teste de Salvaguarda de Constituição (DC = max(10, dano / 2)) ao sofrer dano.
-- [x] **Subproblema 3: Motor de Resolução de Conjuração (`src/rules/spells/casting.rs`)**
-  - Implementar o método `cast_spell`: validação de slots/componentes, consumo de slot, cálculo da DC de Salvaguarda de Magia (`8 + Prof + Mod`) ou Bônus de Ataque Mágico, e aplicação dos efeitos/dano no alvo.
+- [x] **Subproblema 1: Expansão do `trait Race` e Raças Anãs e Élficas (`Dwarf`, `HillDwarf`, `Elf`, `HighElf`)**
+  - Adicionar os novos métodos de traços ao `trait Race`.
+  - Codificar as structs e implementações para Anão, Anão da Colina, Elfo e Alto Elfo.
+- [x] **Subproblema 2: Raças Pequenas e Humanas (`Halfling`, `LightfootHalfling`, `Human`, `Gnome`, `RockGnome`)**
+  - Codificar structs para Pequenino Pés-Leves, Gnomo das Rochas e Humano.
+- [x] **Subproblema 3: Raças Dracônicas e Híbridas (`Dragonborn`, `HalfElf`, `HalfOrc`, `Tiefling`) e Integração com `Entity`**
+  - Codificar structs para Draconato, Meio-Elfo, Meio-Orc e Tiefling.
+  - Adicionar métodos auxiliares na `Entity` para consultar diretamente os traços da raça (`entity.has_darkvision()`, `entity.get_damage_resistances()`, etc.).
+  - Escrever testes unitários abrangentes para todas as raças.
 
 ## Ponto de Partida
-**Sugiro começarmos pelo Subproblema 1 (Estrutura Base de Magias)**, pois criar os tipos de dados e representações de magias do SRD fornecerá a base necessária para que o gerenciador de slots e o motor de conjuração operem.
+**Sugiro começarmos pelo Subproblema 1 (Expansão do Trait + Anões e Elfos)**.

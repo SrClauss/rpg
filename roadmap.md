@@ -69,8 +69,8 @@ Este documento mapeia os passos exatos para traduzir o livro de regras (SRD-OGL_
 *Corresponde ao Livro: Apêndice MM (Monsters).*
 
 - [ ] **Apêndice: Bestiário**
-  - Mapear atributos, ataques multi-ataque e habilidades especiais das criaturas do SRD para os formatos aceitos pela nossa engine Híbrida.
-  - Povoar o SurrealDB com as informações.
+  - [x] Mapear atributos, ataques multi-ataque e habilidades especiais das criaturas do SRD para os formatos aceitos pela nossa engine Híbrida.
+  - [ ] Povoar o SurrealDB com as informações de monstros do SRD.
 
 ---
 

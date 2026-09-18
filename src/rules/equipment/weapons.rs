@@ -1,12 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-/// Tipos de dano no D&D 5e (Físicos básicos por enquanto)
+/// Tipos de dano no D&D 5e
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DamageType {
     Slashing,
     Piercing,
     Bludgeoning,
-    // Tipos mágicos futuros: Fire, Cold, etc.
+    Acid,
+    Cold,
+    Fire,
+    Force,
+    Lightning,
+    Necrotic,
+    Poison,
+    Psychic,
+    Radiant,
+    Thunder,
 }
 
 /// Propriedades Especiais de Armas
@@ -22,7 +31,7 @@ pub enum WeaponProperty {
 }
 
 /// Representa uma Arma Equipável
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Weapon {
     pub name: String,
     pub damage_dice: String, // Ex: "1d8", será parseado pelo módulo Dice
