@@ -5,6 +5,8 @@ use super::background::Background;
 use super::subclass::{Subclass, SubclassFeature};
 use super::alignment::Alignment;
 use super::language::Language;
+use super::advancement::Advancement;
+use super::multiclass::can_multiclass_into;
 use crate::rules::equipment::armor::Armor;
 use crate::rules::equipment::weapons::{Weapon, DamageType};
 use crate::rules::conditions::Condition;
@@ -16,6 +18,7 @@ use serde::{Deserialize, Serialize};
 pub struct Entity {
     pub name: String,
     pub level: u8,
+    pub xp: u32,
     pub max_hp: i32,
     pub current_hp: i32,
     pub attributes: AbilityScores,
@@ -59,7 +62,8 @@ impl Entity {
 
         Self {
             name: name.to_string(),
-            level: 1, // Atualmente fixo em 1 por classe, pode evoluir depois para calcular soma
+            level: 1,
+            xp: 0,
             max_hp: starting_hp,
             current_hp: starting_hp,
             attributes,
@@ -77,6 +81,42 @@ impl Entity {
             spell_slots: None,
             active_concentration: None,
         }
+    }
+
+    /// Adiciona XP ao personagem
+    pub fn add_xp(&mut self, amount: u32) {
+        self.xp = self.xp.saturating_add(amount);
+    }
+
+    /// Avança um nível do personagem (Evolução de Nível / Multiclasse)
+    pub fn level_up(&mut self, new_class: ClassVariant, hp_increase: i32) -> Result<(), String> {
+        if self.level >= 20 {
+            return Err("Personagem já atingiu o nível máximo (Nível 20).".to_string());
+        }
+
+        // Se for multiclasse (classe diferente da primeira), valida pré-requisitos
+        if let Some(first_class) = self.classes.first() {
+            if first_class.as_trait().get_name() != new_class.as_trait().get_name() {
+                can_multiclass_into(self, &new_class)?;
+            }
+        }
+
+        self.level += 1;
+        self.classes.push(new_class);
+
+        // Adiciona pontos de vida (Aumento fixo/rolado + mod CON)
+        let con_mod = self.attributes.constitution.modifier() as i32;
+        let hp_gained = std::cmp::max(1, hp_increase + con_mod);
+        self.max_hp += hp_gained;
+        self.current_hp += hp_gained;
+
+        // Atualiza a meta de XP se o XP atual for menor que o patamar do novo nível
+        let req_xp = Advancement::xp_threshold(self.level);
+        if self.xp < req_xp {
+            self.xp = req_xp;
+        }
+
+        Ok(())
     }
 
     /// Concede Inspiração ao personagem (concedido pelo Mestre)
@@ -362,6 +402,39 @@ mod tests {
         assert!(hero.use_inspiration().is_ok());
         assert!(!hero.has_inspiration);
     }
+
+    #[test]
+    fn test_entity_level_up_and_multiclass() {
+        use crate::rules::character::class::{Fighter, Wizard};
+
+        // STR 14, INT 14 -> Atributos adequados para Fighter / Wizard Multiclass
+        let attrs = AbilityScores::new(14, 10, 12, 14, 10, 10);
+        let mut hero = Entity::new("Gandalftheda", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+
+        assert_eq!(hero.level, 1);
+        assert_eq!(hero.total_level(), 1);
+        assert_eq!(hero.proficiency_bonus(), 2);
+        let initial_hp = hero.max_hp;
+
+        // Adiciona XP e sobe de nível na mesma classe (Fighter)
+        hero.add_xp(300);
+        assert_eq!(hero.xp, 300);
+        let res = hero.level_up(ClassVariant::Fighter(Fighter), 6);
+        assert!(res.is_ok());
+
+        assert_eq!(hero.level, 2);
+        // CON 12 (+1) + 6 HP = +7 HP
+        assert_eq!(hero.max_hp, initial_hp + 7);
+
+        // Multiclasse para Wizard (exige INT 13+ e STR 13+ da classe base Fighter)
+        let wizard_res = hero.level_up(ClassVariant::Wizard(Wizard), 4);
+        assert!(wizard_res.is_ok());
+
+        assert_eq!(hero.level, 3);
+        assert_eq!(hero.classes.len(), 3);
+        assert_eq!(hero.classes[2].as_trait().get_name(), "Wizard");
+    }
 }
+
 
 

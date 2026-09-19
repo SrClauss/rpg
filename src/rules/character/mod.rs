@@ -7,3 +7,5 @@ pub mod background;
 pub mod subclass;
 pub mod alignment;
 pub mod language;
+pub mod advancement;
+pub mod multiclass;
