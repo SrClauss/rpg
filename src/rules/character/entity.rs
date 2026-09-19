@@ -2,6 +2,7 @@ use super::attributes::AbilityScores;
 use super::class::ClassVariant;
 use super::race::{RaceVariant, Race, Size};
 use super::background::Background;
+use super::subclass::{Subclass, SubclassFeature};
 use crate::rules::equipment::armor::Armor;
 use crate::rules::equipment::weapons::{Weapon, DamageType};
 use crate::rules::conditions::Condition;
@@ -17,6 +18,7 @@ pub struct Entity {
     pub current_hp: i32,
     pub attributes: AbilityScores,
     pub classes: Vec<ClassVariant>,
+    pub subclass: Option<Subclass>,
     pub race: RaceVariant,
     pub background: Background,
     pub equipped_armor: Option<Armor>,
@@ -57,6 +59,7 @@ impl Entity {
             current_hp: starting_hp,
             attributes,
             classes: vec![primary_class],
+            subclass: None,
             race,
             background,
             equipped_armor: None,
@@ -68,10 +71,29 @@ impl Entity {
         }
     }
 
-    /// Retorna o nível total do personagem (soma de todos os níveis de classe). 
-    /// Temporariamente fixado em 1 por item do array.
+    /// Define a subclasse do personagem se o nível mínimo for atingido
+    pub fn set_subclass(&mut self, subclass: Subclass) -> Result<(), String> {
+        if self.level < subclass.unlock_level {
+            return Err(format!(
+                "Personagem precisa ser nível {} para escolher a subclasse {}, nível atual é {}",
+                subclass.unlock_level, subclass.name, self.level
+            ));
+        }
+        self.subclass = Some(subclass);
+        Ok(())
+    }
+
+    /// Retorna as habilidades da subclasse ativas para o nível do personagem
+    pub fn active_subclass_features(&self) -> Vec<&SubclassFeature> {
+        match &self.subclass {
+            Some(sc) => sc.active_features(self.level),
+            None => Vec::new(),
+        }
+    }
+
+    /// Retorna o nível total do personagem (soma de todos os níveis de classe ou campo level).
     pub fn total_level(&self) -> u8 {
-        self.classes.len() as u8
+        std::cmp::max(self.level, self.classes.len() as u8)
     }
 
     /// Retorna o Bônus de Proficiência baseado no Nível Total
@@ -262,4 +284,32 @@ mod tests {
         assert!(!hero.has_condition(&Condition::Stunned));
         assert!(!hero.is_incapacitated());
     }
+
+    #[test]
+    fn test_entity_assassin_subclass() {
+        use crate::rules::character::subclass::create_assassin_subclass;
+        use crate::rules::character::class::Rogue;
+
+        let attrs = AbilityScores::new(10, 16, 12, 14, 10, 8);
+        let mut rogue = Entity::new("Vax", attrs, ClassVariant::Rogue(Rogue), RaceVariant::Human(Human), create_acolyte());
+
+        let assassin = create_assassin_subclass();
+
+        // Tentar definir subclasse no nível 1 (deve falhar pois Assassin exige nível 3)
+        let res = rogue.set_subclass(assassin.clone());
+        assert!(res.is_err());
+        assert_eq!(rogue.active_subclass_features().len(), 0);
+
+        // Subir para o Nível 3 e vincular a subclasse Assassin
+        rogue.level = 3;
+        let res_lvl3 = rogue.set_subclass(assassin);
+        assert!(res_lvl3.is_ok());
+
+        // Deve retornar 2 características ativas no nível 3 (Bonus Proficiencies e Assassinate)
+        let features = rogue.active_subclass_features();
+        assert_eq!(features.len(), 2);
+        assert_eq!(features[0].name, "Bonus Proficiencies");
+        assert_eq!(features[1].name, "Assassinate");
+    }
 }
+
