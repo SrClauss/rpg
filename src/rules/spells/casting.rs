@@ -98,7 +98,7 @@ pub fn cast_spell(
             let target_entity = target.expect("Ataque Mágico requer um alvo válido");
             
             // Cria uma arma virtual representando o Ataque Mágico
-            let spell_weapon = Weapon::new(&spell.name, damage_dice, *damage_type, vec![]);
+            let spell_weapon = Weapon::spell_attack(&spell.name, damage_dice, *damage_type);
             
             // Resolve como rolagem de ataque
             let attack_res = resolve_attack(
