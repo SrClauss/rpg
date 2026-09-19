@@ -3,6 +3,8 @@ use super::class::ClassVariant;
 use super::race::{RaceVariant, Race, Size};
 use super::background::Background;
 use super::subclass::{Subclass, SubclassFeature};
+use super::alignment::Alignment;
+use super::language::Language;
 use crate::rules::equipment::armor::Armor;
 use crate::rules::equipment::weapons::{Weapon, DamageType};
 use crate::rules::conditions::Condition;
@@ -21,6 +23,9 @@ pub struct Entity {
     pub subclass: Option<Subclass>,
     pub race: RaceVariant,
     pub background: Background,
+    pub alignment: Alignment,
+    pub languages: Vec<Language>,
+    pub has_inspiration: bool,
     pub equipped_armor: Option<Armor>,
     pub equipped_shield: Option<Armor>,
     pub equipped_weapons: Vec<Weapon>,
@@ -62,6 +67,9 @@ impl Entity {
             subclass: None,
             race,
             background,
+            alignment: Alignment::TrueNeutral,
+            languages: vec![Language::Common],
+            has_inspiration: false,
             equipped_armor: None,
             equipped_shield: None,
             equipped_weapons: Vec::new(),
@@ -69,6 +77,20 @@ impl Entity {
             spell_slots: None,
             active_concentration: None,
         }
+    }
+
+    /// Concede Inspiração ao personagem (concedido pelo Mestre)
+    pub fn grant_inspiration(&mut self) {
+        self.has_inspiration = true;
+    }
+
+    /// Consome a Inspiração do personagem para obter Vantagem
+    pub fn use_inspiration(&mut self) -> Result<(), String> {
+        if !self.has_inspiration {
+            return Err("Personagem não possui inspiração para usar.".to_string());
+        }
+        self.has_inspiration = false;
+        Ok(())
     }
 
     /// Define a subclasse do personagem se o nível mínimo for atingido
@@ -311,5 +333,35 @@ mod tests {
         assert_eq!(features[0].name, "Bonus Proficiencies");
         assert_eq!(features[1].name, "Assassinate");
     }
+
+    #[test]
+    fn test_entity_alignment_language_inspiration() {
+        use crate::rules::character::alignment::{Alignment, Ethics, Morality};
+        use crate::rules::character::language::Language;
+        use crate::rules::character::class::Fighter;
+
+        let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
+        let mut hero = Entity::new("Aragorn", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+
+        // Testar Alinhamento
+        hero.alignment = Alignment::new(Ethics::Lawful, Morality::Good);
+        assert_eq!(hero.alignment.name(), "Lawful Good");
+
+        // Testar Idiomas
+        hero.languages.push(Language::Elvish);
+        assert_eq!(hero.languages.len(), 2);
+        assert!(hero.languages.contains(&Language::Common));
+        assert!(hero.languages.contains(&Language::Elvish));
+
+        // Testar Inspiração
+        assert!(!hero.has_inspiration);
+        assert!(hero.use_inspiration().is_err());
+
+        hero.grant_inspiration();
+        assert!(hero.has_inspiration);
+        assert!(hero.use_inspiration().is_ok());
+        assert!(!hero.has_inspiration);
+    }
 }
+
 

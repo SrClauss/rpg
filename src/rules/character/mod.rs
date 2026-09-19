@@ -5,3 +5,5 @@ pub mod race;
 pub mod skills;
 pub mod background;
 pub mod subclass;
+pub mod alignment;
+pub mod language;
