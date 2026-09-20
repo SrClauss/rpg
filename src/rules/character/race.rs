@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use super::attributes::Ability;
 use crate::rules::equipment::weapons::DamageType;
+use serde::{Deserialize, Serialize};
 
 /// Tamanho da criatura (Size)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,13 +21,27 @@ pub trait Race {
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)>;
 
     // Métodos para Traços Raciais Especiais (Com valores padrão false/vazio)
-    fn has_darkvision(&self) -> bool { false }
-    fn has_fey_ancestry(&self) -> bool { false }
-    fn has_lucky(&self) -> bool { false }
-    fn has_gnome_cunning(&self) -> bool { false }
-    fn has_relentless_endurance(&self) -> bool { false }
-    fn get_damage_resistances(&self) -> Vec<DamageType> { vec![] }
-    fn get_traits_summary(&self) -> Vec<String> { vec![] }
+    fn has_darkvision(&self) -> bool {
+        false
+    }
+    fn has_fey_ancestry(&self) -> bool {
+        false
+    }
+    fn has_lucky(&self) -> bool {
+        false
+    }
+    fn has_gnome_cunning(&self) -> bool {
+        false
+    }
+    fn has_relentless_endurance(&self) -> bool {
+        false
+    }
+    fn get_damage_resistances(&self) -> Vec<DamageType> {
+        vec![]
+    }
+    fn get_traits_summary(&self) -> Vec<String> {
+        vec![]
+    }
 }
 
 /// Estrutura Fixa: Humano
@@ -35,8 +49,12 @@ pub trait Race {
 pub struct Human;
 
 impl Race for Human {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![
@@ -59,15 +77,23 @@ impl Race for Human {
 pub struct Dwarf;
 
 impl Race for Dwarf {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Constitution, 2)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn get_damage_resistances(&self) -> Vec<DamageType> { vec![DamageType::Poison] }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn get_damage_resistances(&self) -> Vec<DamageType> {
+        vec![DamageType::Poison]
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -83,15 +109,23 @@ impl Race for Dwarf {
 pub struct HillDwarf;
 
 impl Race for HillDwarf {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Constitution, 2), (Ability::Wisdom, 1)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn get_damage_resistances(&self) -> Vec<DamageType> { vec![DamageType::Poison] }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn get_damage_resistances(&self) -> Vec<DamageType> {
+        vec![DamageType::Poison]
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -107,19 +141,28 @@ impl Race for HillDwarf {
 pub struct Elf;
 
 impl Race for Elf {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Dexterity, 2)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_fey_ancestry(&self) -> bool { true }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_fey_ancestry(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
-            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)".to_string(),
+            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)"
+                .to_string(),
             "Visão no Escuro (60ft)".to_string(),
             "Transe (Descanso em 4 horas)".to_string(),
         ]
@@ -131,19 +174,28 @@ impl Race for Elf {
 pub struct HighElf;
 
 impl Race for HighElf {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Dexterity, 2), (Ability::Intelligence, 1)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_fey_ancestry(&self) -> bool { true }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_fey_ancestry(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
-            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)".to_string(),
+            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)"
+                .to_string(),
             "Visão no Escuro (60ft)".to_string(),
             "Treinamento com Armas Élficas".to_string(),
             "Truque Adicional de Mago".to_string(),
@@ -156,14 +208,20 @@ impl Race for HighElf {
 pub struct Halfling;
 
 impl Race for Halfling {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Small }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Small
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Dexterity, 2)]
     }
 
-    fn has_lucky(&self) -> bool { true }
+    fn has_lucky(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -179,14 +237,20 @@ impl Race for Halfling {
 pub struct LightfootHalfling;
 
 impl Race for LightfootHalfling {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Small }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Small
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Dexterity, 2), (Ability::Charisma, 1)]
     }
 
-    fn has_lucky(&self) -> bool { true }
+    fn has_lucky(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -202,15 +266,23 @@ impl Race for LightfootHalfling {
 pub struct Gnome;
 
 impl Race for Gnome {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Small }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Small
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Intelligence, 2)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_gnome_cunning(&self) -> bool { true }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_gnome_cunning(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -225,15 +297,23 @@ impl Race for Gnome {
 pub struct RockGnome;
 
 impl Race for RockGnome {
-    fn get_speed(&self) -> u8 { 25 }
-    fn get_size(&self) -> Size { Size::Small }
+    fn get_speed(&self) -> u8 {
+        25
+    }
+    fn get_size(&self) -> Size {
+        Size::Small
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Intelligence, 2), (Ability::Constitution, 1)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_gnome_cunning(&self) -> bool { true }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_gnome_cunning(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -250,8 +330,12 @@ impl Race for RockGnome {
 pub struct Dragonborn;
 
 impl Race for Dragonborn {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Strength, 2), (Ability::Charisma, 1)]
@@ -274,19 +358,32 @@ impl Race for Dragonborn {
 pub struct HalfElf;
 
 impl Race for HalfElf {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
-
-    fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
-        vec![(Ability::Charisma, 2), (Ability::Dexterity, 1), (Ability::Constitution, 1)]
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_fey_ancestry(&self) -> bool { true }
+    fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
+        vec![
+            (Ability::Charisma, 2),
+            (Ability::Dexterity, 1),
+            (Ability::Constitution, 1),
+        ]
+    }
+
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_fey_ancestry(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
-            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)".to_string(),
+            "Ancestralidade Feérica (Vantagem vs Encantamento, imunidade a Sono Mágico)"
+                .to_string(),
             "Visão no Escuro (60ft)".to_string(),
             "Versatilidade em Perícias (2 perícias à escolha)".to_string(),
         ]
@@ -298,19 +395,28 @@ impl Race for HalfElf {
 pub struct HalfOrc;
 
 impl Race for HalfOrc {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Strength, 2), (Ability::Constitution, 1)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn has_relentless_endurance(&self) -> bool { true }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn has_relentless_endurance(&self) -> bool {
+        true
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
-            "Resistência Incansável (Fica com 1 HP ao ser reduzido a 0 HP uma vez/descanso)".to_string(),
+            "Resistência Incansável (Fica com 1 HP ao ser reduzido a 0 HP uma vez/descanso)"
+                .to_string(),
             "Ataques Selvagens (Dado extra de dano no acerto crítico)".to_string(),
             "Ameaçador (Proficiência em Intimidação)".to_string(),
             "Visão no Escuro (60ft)".to_string(),
@@ -323,15 +429,23 @@ impl Race for HalfOrc {
 pub struct Tiefling;
 
 impl Race for Tiefling {
-    fn get_speed(&self) -> u8 { 30 }
-    fn get_size(&self) -> Size { Size::Medium }
+    fn get_speed(&self) -> u8 {
+        30
+    }
+    fn get_size(&self) -> Size {
+        Size::Medium
+    }
 
     fn get_ability_score_increases(&self) -> Vec<(Ability, i8)> {
         vec![(Ability::Charisma, 2), (Ability::Intelligence, 1)]
     }
 
-    fn has_darkvision(&self) -> bool { true }
-    fn get_damage_resistances(&self) -> Vec<DamageType> { vec![DamageType::Fire] }
+    fn has_darkvision(&self) -> bool {
+        true
+    }
+    fn get_damage_resistances(&self) -> Vec<DamageType> {
+        vec![DamageType::Fire]
+    }
 
     fn get_traits_summary(&self) -> Vec<String> {
         vec![
@@ -395,7 +509,10 @@ mod tests {
         let dwarf = RaceVariant::HillDwarf(HillDwarf);
         assert_eq!(dwarf.as_trait().get_speed(), 25);
         assert!(dwarf.as_trait().has_darkvision());
-        assert_eq!(dwarf.as_trait().get_damage_resistances(), vec![DamageType::Poison]);
+        assert_eq!(
+            dwarf.as_trait().get_damage_resistances(),
+            vec![DamageType::Poison]
+        );
 
         let halfling = RaceVariant::LightfootHalfling(LightfootHalfling);
         assert_eq!(halfling.as_trait().get_size(), Size::Small);
@@ -409,6 +526,9 @@ mod tests {
         assert!(half_orc.as_trait().has_relentless_endurance());
 
         let tiefling = RaceVariant::Tiefling(Tiefling);
-        assert_eq!(tiefling.as_trait().get_damage_resistances(), vec![DamageType::Fire]);
+        assert_eq!(
+            tiefling.as_trait().get_damage_resistances(),
+            vec![DamageType::Fire]
+        );
     }
 }

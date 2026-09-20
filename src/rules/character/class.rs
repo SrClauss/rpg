@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::attributes::Ability;
+use serde::{Deserialize, Serialize};
 
 /// Dado de Vida da classe (Hit Dice)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,10 +24,18 @@ pub trait CharacterClass {
 pub struct Barbarian;
 
 impl CharacterClass for Barbarian {
-    fn get_name(&self) -> &str { "Barbarian" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D12 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Strength] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Constitution] }
+    fn get_name(&self) -> &str {
+        "Barbarian"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D12
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Strength]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Constitution]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Fúria (Rage)".to_string(),
@@ -41,10 +49,18 @@ impl CharacterClass for Barbarian {
 pub struct Fighter;
 
 impl CharacterClass for Fighter {
-    fn get_name(&self) -> &str { "Fighter" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D10 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Dexterity] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Constitution] }
+    fn get_name(&self) -> &str {
+        "Fighter"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D10
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Dexterity]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Constitution]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Estilo de Luta (Fighting Style)".to_string(),
@@ -58,10 +74,18 @@ impl CharacterClass for Fighter {
 pub struct Monk;
 
 impl CharacterClass for Monk {
-    fn get_name(&self) -> &str { "Monk" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Dexterity, Ability::Wisdom] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Dexterity] }
+    fn get_name(&self) -> &str {
+        "Monk"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Dexterity, Ability::Wisdom]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Dexterity]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Defesa sem Armadura (10 + Mod. DES + Mod. SAB)".to_string(),
@@ -75,10 +99,18 @@ impl CharacterClass for Monk {
 pub struct Rogue;
 
 impl CharacterClass for Rogue {
-    fn get_name(&self) -> &str { "Rogue" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Dexterity] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Dexterity, Ability::Intelligence] }
+    fn get_name(&self) -> &str {
+        "Rogue"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Dexterity]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Dexterity, Ability::Intelligence]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Especialização (Expertise)".to_string(),
@@ -93,10 +125,18 @@ impl CharacterClass for Rogue {
 pub struct Cleric;
 
 impl CharacterClass for Cleric {
-    fn get_name(&self) -> &str { "Cleric" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Wisdom] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Wisdom, Ability::Charisma] }
+    fn get_name(&self) -> &str {
+        "Cleric"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Wisdom]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Wisdom, Ability::Charisma]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Conjuração Divina (Spellcasting)".to_string(),
@@ -111,10 +151,18 @@ impl CharacterClass for Cleric {
 pub struct Druid;
 
 impl CharacterClass for Druid {
-    fn get_name(&self) -> &str { "Druid" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Wisdom] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Intelligence, Ability::Wisdom] }
+    fn get_name(&self) -> &str {
+        "Druid"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Wisdom]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Intelligence, Ability::Wisdom]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Druídico (Druidic)".to_string(),
@@ -129,10 +177,18 @@ impl CharacterClass for Druid {
 pub struct Sorcerer;
 
 impl CharacterClass for Sorcerer {
-    fn get_name(&self) -> &str { "Sorcerer" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D6 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Charisma] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Constitution, Ability::Charisma] }
+    fn get_name(&self) -> &str {
+        "Sorcerer"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D6
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Charisma]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Constitution, Ability::Charisma]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Conjuração Inata (Spellcasting)".to_string(),
@@ -148,10 +204,18 @@ impl CharacterClass for Sorcerer {
 pub struct Bard;
 
 impl CharacterClass for Bard {
-    fn get_name(&self) -> &str { "Bard" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Charisma] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Dexterity, Ability::Charisma] }
+    fn get_name(&self) -> &str {
+        "Bard"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Charisma]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Dexterity, Ability::Charisma]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Conjuração Bárdica (Spellcasting)".to_string(),
@@ -166,10 +230,18 @@ impl CharacterClass for Bard {
 pub struct Paladin;
 
 impl CharacterClass for Paladin {
-    fn get_name(&self) -> &str { "Paladin" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D10 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Charisma] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Wisdom, Ability::Charisma] }
+    fn get_name(&self) -> &str {
+        "Paladin"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D10
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Charisma]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Wisdom, Ability::Charisma]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Sentido Divino (Divine Sense)".to_string(),
@@ -184,10 +256,18 @@ impl CharacterClass for Paladin {
 pub struct Ranger;
 
 impl CharacterClass for Ranger {
-    fn get_name(&self) -> &str { "Ranger" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D10 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Dexterity, Ability::Wisdom] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Strength, Ability::Dexterity] }
+    fn get_name(&self) -> &str {
+        "Ranger"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D10
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Dexterity, Ability::Wisdom]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Strength, Ability::Dexterity]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Inimigo Favorito (Favored Enemy)".to_string(),
@@ -202,10 +282,18 @@ impl CharacterClass for Ranger {
 pub struct Warlock;
 
 impl CharacterClass for Warlock {
-    fn get_name(&self) -> &str { "Warlock" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D8 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Charisma] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Wisdom, Ability::Charisma] }
+    fn get_name(&self) -> &str {
+        "Warlock"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D8
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Charisma]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Wisdom, Ability::Charisma]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Patrono Ultramundano (Otherworldly Patron)".to_string(),
@@ -220,10 +308,18 @@ impl CharacterClass for Warlock {
 pub struct Wizard;
 
 impl CharacterClass for Wizard {
-    fn get_name(&self) -> &str { "Wizard" }
-    fn get_hit_dice(&self) -> HitDice { HitDice::D6 }
-    fn get_primary_abilities(&self) -> Vec<Ability> { vec![Ability::Intelligence] }
-    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> { vec![Ability::Intelligence, Ability::Wisdom] }
+    fn get_name(&self) -> &str {
+        "Wizard"
+    }
+    fn get_hit_dice(&self) -> HitDice {
+        HitDice::D6
+    }
+    fn get_primary_abilities(&self) -> Vec<Ability> {
+        vec![Ability::Intelligence]
+    }
+    fn get_saving_throw_proficiencies(&self) -> Vec<Ability> {
+        vec![Ability::Intelligence, Ability::Wisdom]
+    }
     fn get_class_features_summary(&self, _level: u8) -> Vec<String> {
         vec![
             "Conjuração Arcana (Spellcasting)".to_string(),

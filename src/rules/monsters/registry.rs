@@ -1,12 +1,16 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::rules::character::attributes::AbilityScores;
 use crate::rules::character::background::create_acolyte;
-use crate::rules::character::class::{Fighter, ClassVariant};
+use crate::rules::character::class::{ClassVariant, Fighter};
 use crate::rules::character::entity::Entity;
 use crate::rules::character::race::{Human, RaceVariant};
-use crate::rules::equipment::weapons::{create_dagger, create_longsword, create_greatsword, DamageType, Weapon};
-use crate::rules::monsters::monster::{ActionType, CreatureSize, CreatureType, Monster, MonsterAction};
+use crate::rules::equipment::weapons::{
+    create_dagger, create_greatsword, create_longsword, DamageType, Weapon,
+};
+use crate::rules::monsters::monster::{
+    ActionType, CreatureSize, CreatureType, Monster, MonsterAction,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Registro Central de Monstros (Suporta SRD Padrão e Conteúdo Homebrew/JSON)
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -48,7 +52,7 @@ impl BestiaryRegistry {
     pub fn load_json(&mut self, json_str: &str) -> Result<usize, String> {
         let list: Vec<Monster> = serde_json::from_str(json_str)
             .map_err(|e| format!("Erro na desserialização de monstros JSON: {}", e))?;
-        
+
         let count = list.len();
         for monster in list {
             self.register_monster(monster);
@@ -60,32 +64,90 @@ impl BestiaryRegistry {
     fn load_srd_defaults(&mut self) {
         // 1. Goblin (CR 1/4)
         let goblin_attrs = AbilityScores::new(8, 14, 10, 10, 8, 8);
-        let goblin_entity = Entity::new("Goblin", goblin_attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        let mut goblin = Monster::new("goblin", goblin_entity, CreatureType::Humanoid("goblinoid".to_string()), CreatureSize::Small, 0.25, 50);
-        goblin.add_trait("Nimble Escape", "Pode usar as ações Disengage ou Hide como Ação Bônus");
+        let goblin_entity = Entity::new(
+            "Goblin",
+            goblin_attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+        let mut goblin = Monster::new(
+            "goblin",
+            goblin_entity,
+            CreatureType::Humanoid("goblinoid".to_string()),
+            CreatureSize::Small,
+            0.25,
+            50,
+        );
+        goblin.add_trait(
+            "Nimble Escape",
+            "Pode usar as ações Disengage ou Hide como Ação Bônus",
+        );
         goblin.add_action(MonsterAction::attack("Scimitar", create_dagger()));
         self.register_monster(goblin);
 
         // 2. Orc (CR 1/2)
         let orc_attrs = AbilityScores::new(16, 12, 16, 7, 11, 10);
-        let orc_entity = Entity::new("Orc", orc_attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        let mut orc = Monster::new("orc", orc_entity, CreatureType::Humanoid("orc".to_string()), CreatureSize::Medium, 0.5, 100);
-        orc.add_trait("Aggressive", "Como ação bônus, pode se mover até seu deslocamento em direção a um inimigo");
+        let orc_entity = Entity::new(
+            "Orc",
+            orc_attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+        let mut orc = Monster::new(
+            "orc",
+            orc_entity,
+            CreatureType::Humanoid("orc".to_string()),
+            CreatureSize::Medium,
+            0.5,
+            100,
+        );
+        orc.add_trait(
+            "Aggressive",
+            "Como ação bônus, pode se mover até seu deslocamento em direção a um inimigo",
+        );
         orc.add_action(MonsterAction::attack("Greataxe", create_greatsword()));
         self.register_monster(orc);
 
         // 3. Zombie (CR 1/4)
         let zombie_attrs = AbilityScores::new(13, 6, 16, 3, 6, 5);
-        let zombie_entity = Entity::new("Zombie", zombie_attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        let mut zombie = Monster::new("zombie", zombie_entity, CreatureType::Undead, CreatureSize::Medium, 0.25, 50);
+        let zombie_entity = Entity::new(
+            "Zombie",
+            zombie_attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+        let mut zombie = Monster::new(
+            "zombie",
+            zombie_entity,
+            CreatureType::Undead,
+            CreatureSize::Medium,
+            0.25,
+            50,
+        );
         zombie.add_trait("Undead Fortitude", "Se dano não-radiante/crítico reduzir a 0 HP, faz Salvaguarda de CON (CD 5+dano) para ficar com 1 HP");
         zombie.add_action(MonsterAction::attack("Slam", create_longsword()));
         self.register_monster(zombie);
 
         // 4. Young Red Dragon (CR 10)
         let dragon_attrs = AbilityScores::new(23, 10, 21, 14, 11, 19);
-        let dragon_entity = Entity::new("Young Red Dragon", dragon_attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        let mut dragon = Monster::new("young_red_dragon", dragon_entity, CreatureType::Dragon, CreatureSize::Large, 10.0, 5900);
+        let dragon_entity = Entity::new(
+            "Young Red Dragon",
+            dragon_attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+        let mut dragon = Monster::new(
+            "young_red_dragon",
+            dragon_entity,
+            CreatureType::Dragon,
+            CreatureSize::Large,
+            10.0,
+            5900,
+        );
         dragon.add_trait("Fire Immunity", "Imune a dano de Fogo");
         dragon.add_action(MonsterAction::new(
             "Fire Breath",
@@ -118,8 +180,21 @@ mod tests {
         let mut registry = BestiaryRegistry::new();
 
         let attrs = AbilityScores::new(18, 18, 16, 12, 14, 16);
-        let base_entity = Entity::new("Lion-O, Rei dos Felídeos", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        let mut lion_o_original = Monster::new("lion_o", base_entity, CreatureType::Custom("Felídeo".to_string()), CreatureSize::Medium, 8.0, 3900);
+        let base_entity = Entity::new(
+            "Lion-O, Rei dos Felídeos",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+        let mut lion_o_original = Monster::new(
+            "lion_o",
+            base_entity,
+            CreatureType::Custom("Felídeo".to_string()),
+            CreatureSize::Medium,
+            8.0,
+            3900,
+        );
         lion_o_original.add_trait("Visão Além do Alcance", "Revela invisibilidade e ilusões");
 
         let json_str = serde_json::to_string(&vec![lion_o_original]).unwrap();

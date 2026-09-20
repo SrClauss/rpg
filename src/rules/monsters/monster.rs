@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use crate::rules::character::entity::Entity;
 use crate::rules::equipment::weapons::Weapon;
+use serde::{Deserialize, Serialize};
 
 /// Categorias de Tamanho de Criatura no D&D 5e
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,7 +30,7 @@ pub enum CreatureType {
     Ooze,
     Plant,
     Undead,
-    Custom(String),   // Ex: "Alien Felídeo"
+    Custom(String), // Ex: "Alien Felídeo"
 }
 
 /// Traço Especial / Habilidade Passiva do Monstro
@@ -68,7 +68,12 @@ pub struct MonsterAction {
 }
 
 impl MonsterAction {
-    pub fn new(name: &str, action_type: ActionType, description: &str, weapon: Option<Weapon>) -> Self {
+    pub fn new(
+        name: &str,
+        action_type: ActionType,
+        description: &str,
+        weapon: Option<Weapon>,
+    ) -> Self {
         Self {
             name: name.to_string(),
             action_type,
@@ -129,15 +134,21 @@ impl Monster {
 mod tests {
     use super::*;
     use crate::rules::character::attributes::AbilityScores;
-    use crate::rules::character::class::{Fighter, ClassVariant};
-    use crate::rules::character::race::{Human, RaceVariant};
     use crate::rules::character::background::create_acolyte;
+    use crate::rules::character::class::{ClassVariant, Fighter};
+    use crate::rules::character::race::{Human, RaceVariant};
     use crate::rules::equipment::weapons::create_dagger;
 
     #[test]
     fn test_monster_creation() {
         let attrs = AbilityScores::new(8, 14, 10, 10, 8, 8);
-        let base_entity = Entity::new("Goblin", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let base_entity = Entity::new(
+            "Goblin",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         let mut goblin = Monster::new(
             "goblin",
@@ -148,7 +159,10 @@ mod tests {
             50,
         );
 
-        goblin.add_trait("Nimble Escape", "Pode usar Disengage ou Hide como Ação Bônus");
+        goblin.add_trait(
+            "Nimble Escape",
+            "Pode usar Disengage ou Hide como Ação Bônus",
+        );
         goblin.add_action(MonsterAction::attack("Scimitar", create_dagger()));
 
         assert_eq!(goblin.id, "goblin");

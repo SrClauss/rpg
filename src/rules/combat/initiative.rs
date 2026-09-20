@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use crate::dice::{Dice, DiceMode};
 use crate::rules::character::attributes::Ability;
 use crate::rules::character::entity::Entity;
+use serde::{Deserialize, Serialize};
 
 /// Representa um participante na Fila de Iniciativa
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -48,7 +48,13 @@ impl InitiativeTracker {
     }
 
     /// Adiciona um combatente com um valor de iniciativa pré-determinado
-    pub fn add_combatant_custom(&mut self, id: &str, name: &str, initiative_score: i32, dex_modifier: i32) {
+    pub fn add_combatant_custom(
+        &mut self,
+        id: &str,
+        name: &str,
+        initiative_score: i32,
+        dex_modifier: i32,
+    ) {
         self.combatants.push(Combatant {
             id: id.to_string(),
             name: name.to_string(),
@@ -112,9 +118,9 @@ impl InitiativeTracker {
 mod tests {
     use super::*;
     use crate::rules::character::attributes::AbilityScores;
-    use crate::rules::character::class::{Fighter, ClassVariant};
-    use crate::rules::character::race::{Human, RaceVariant};
     use crate::rules::character::background::create_acolyte;
+    use crate::rules::character::class::{ClassVariant, Fighter};
+    use crate::rules::character::race::{Human, RaceVariant};
 
     #[test]
     fn test_initiative_order_and_turn_progression() {
@@ -147,7 +153,13 @@ mod tests {
     #[test]
     fn test_add_entity_initiative() {
         let attrs = AbilityScores::new(10, 16, 10, 10, 10, 10);
-        let hero = Entity::new("Hero", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let hero = Entity::new(
+            "Hero",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         let mut tracker = InitiativeTracker::new();
         tracker.add_entity(&hero, DiceMode::Normal);

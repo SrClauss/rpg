@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use serde::{Deserialize, Serialize};
 
 use super::armor::{all_srd_armors, Armor};
 use super::weapons::{all_srd_weapons, Weapon};
@@ -87,6 +87,26 @@ impl EquipmentRegistry {
             self.register_armor(armor);
         }
         Ok(count)
+    }
+
+    /// Carrega armas Homebrew a partir de uma pasta contendo scripts .hb (Rhai)
+    pub fn load_rhai_homebrew_weapons(&mut self, dir_path: &str) -> usize {
+        let weapons: Vec<Weapon> = crate::rules::homebrew_loader::load_homebrew_from_dir(dir_path, "get_weapon");
+        let count = weapons.len();
+        for weapon in weapons {
+            self.register_weapon(weapon);
+        }
+        count
+    }
+
+    /// Carrega armaduras Homebrew a partir de uma pasta contendo scripts .hb (Rhai)
+    pub fn load_rhai_homebrew_armors(&mut self, dir_path: &str) -> usize {
+        let armors: Vec<Armor> = crate::rules::homebrew_loader::load_homebrew_from_dir(dir_path, "get_armor");
+        let count = armors.len();
+        for armor in armors {
+            self.register_armor(armor);
+        }
+        count
     }
 }
 

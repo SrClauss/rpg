@@ -1,11 +1,14 @@
-use serde::{Deserialize, Serialize};
 use super::attributes::AbilityScores;
 use super::class::ClassVariant;
 use super::entity::Entity;
 use crate::rules::spells::spellcaster::{SpellSlotLevel, SpellSlots};
+use serde::{Deserialize, Serialize};
 
 /// Valida os pré-requisitos de atributo para Multiclasse (SRD 5.1 Página 56)
-pub fn check_multiclass_prerequisites(attrs: &AbilityScores, class: &ClassVariant) -> Result<(), String> {
+pub fn check_multiclass_prerequisites(
+    attrs: &AbilityScores,
+    class: &ClassVariant,
+) -> Result<(), String> {
     let str = attrs.strength.0;
     let dex = attrs.dexterity.0;
     let int = attrs.intelligence.0;

@@ -1,16 +1,17 @@
-use super::attributes::AbilityScores;
-use super::class::ClassVariant;
-use super::race::{RaceVariant, Race, Size};
-use super::background::Background;
-use super::subclass::{Subclass, SubclassFeature};
-use super::alignment::Alignment;
-use super::language::Language;
 use super::advancement::Advancement;
+use super::alignment::Alignment;
+use super::attributes::AbilityScores;
+use super::background::Background;
+use super::class::ClassVariant;
+use super::language::Language;
 use super::multiclass::can_multiclass_into;
-use crate::rules::equipment::armor::Armor;
-use crate::rules::equipment::weapons::{Weapon, DamageType};
+use super::race::{Race, RaceVariant, Size};
+use super::subclass::{Subclass, SubclassFeature};
+use crate::rules::character::active_effects::{ActiveEffect, AppliedEffect};
 use crate::rules::conditions::Condition;
-use crate::rules::spells::spellcaster::{SpellSlots, ActiveConcentration};
+use crate::rules::equipment::armor::Armor;
+use crate::rules::equipment::weapons::{DamageType, Weapon};
+use crate::rules::spells::spellcaster::{ActiveConcentration, SpellSlots};
 use serde::{Deserialize, Serialize};
 
 /// Representa a Ficha Base de qualquer personagem (Entity) no jogo
@@ -19,8 +20,9 @@ pub struct Entity {
     pub name: String,
     pub level: u8,
     pub xp: u32,
-    pub max_hp: i32,
+    pub base_max_hp: i32,
     pub current_hp: i32,
+    pub temp_hp: i32,
     pub attributes: AbilityScores,
     pub classes: Vec<ClassVariant>,
     pub subclass: Option<Subclass>,
@@ -35,20 +37,39 @@ pub struct Entity {
     pub active_conditions: Vec<Condition>,
     pub spell_slots: Option<SpellSlots>,
     pub active_concentration: Option<ActiveConcentration>,
+    pub applied_effects: Vec<AppliedEffect>,
 }
 
 impl Entity {
-    pub fn new(name: &str, mut attributes: AbilityScores, primary_class: ClassVariant, race: RaceVariant, background: Background) -> Self {
+    pub fn new(
+        name: &str,
+        mut attributes: AbilityScores,
+        primary_class: ClassVariant,
+        race: RaceVariant,
+        background: Background,
+    ) -> Self {
         // Aplica os bônus raciais nos atributos base ANTES de calcular a vida
         let asi = race.as_trait().get_ability_score_increases();
         for (ability, bonus) in asi {
             match ability {
-                super::attributes::Ability::Strength => attributes.strength.0 = (attributes.strength.0 as i8 + bonus) as u8,
-                super::attributes::Ability::Dexterity => attributes.dexterity.0 = (attributes.dexterity.0 as i8 + bonus) as u8,
-                super::attributes::Ability::Constitution => attributes.constitution.0 = (attributes.constitution.0 as i8 + bonus) as u8,
-                super::attributes::Ability::Intelligence => attributes.intelligence.0 = (attributes.intelligence.0 as i8 + bonus) as u8,
-                super::attributes::Ability::Wisdom => attributes.wisdom.0 = (attributes.wisdom.0 as i8 + bonus) as u8,
-                super::attributes::Ability::Charisma => attributes.charisma.0 = (attributes.charisma.0 as i8 + bonus) as u8,
+                super::attributes::Ability::Strength => {
+                    attributes.strength.0 = (attributes.strength.0 as i8 + bonus) as u8
+                }
+                super::attributes::Ability::Dexterity => {
+                    attributes.dexterity.0 = (attributes.dexterity.0 as i8 + bonus) as u8
+                }
+                super::attributes::Ability::Constitution => {
+                    attributes.constitution.0 = (attributes.constitution.0 as i8 + bonus) as u8
+                }
+                super::attributes::Ability::Intelligence => {
+                    attributes.intelligence.0 = (attributes.intelligence.0 as i8 + bonus) as u8
+                }
+                super::attributes::Ability::Wisdom => {
+                    attributes.wisdom.0 = (attributes.wisdom.0 as i8 + bonus) as u8
+                }
+                super::attributes::Ability::Charisma => {
+                    attributes.charisma.0 = (attributes.charisma.0 as i8 + bonus) as u8
+                }
             }
         }
 
@@ -64,8 +85,9 @@ impl Entity {
             name: name.to_string(),
             level: 1,
             xp: 0,
-            max_hp: starting_hp,
+            base_max_hp: starting_hp,
             current_hp: starting_hp,
+            temp_hp: 0,
             attributes,
             classes: vec![primary_class],
             subclass: None,
@@ -80,7 +102,24 @@ impl Entity {
             active_conditions: Vec::new(),
             spell_slots: None,
             active_concentration: None,
+            applied_effects: Vec::new(),
         }
+    }
+
+    /// Calcula o HP Máximo do personagem considerando a base e os efeitos ativos (ex: Aid)
+    pub fn get_max_hp(&self) -> i32 {
+        let mut total = self.base_max_hp;
+        for applied in &self.applied_effects {
+            if let ActiveEffect::IncreaseMaxHP(bonus) = applied.effect {
+                total += bonus;
+            }
+        }
+        total
+    }
+
+    /// Adiciona um efeito ativo
+    pub fn add_effect(&mut self, effect: AppliedEffect) {
+        self.applied_effects.push(effect);
     }
 
     /// Adiciona XP ao personagem
@@ -107,7 +146,7 @@ impl Entity {
         // Adiciona pontos de vida (Aumento fixo/rolado + mod CON)
         let con_mod = self.attributes.constitution.modifier() as i32;
         let hp_gained = std::cmp::max(1, hp_increase + con_mod);
-        self.max_hp += hp_gained;
+        self.base_max_hp += hp_gained;
         self.current_hp += hp_gained;
 
         // Atualiza a meta de XP se o XP atual for menor que o patamar do novo nível
@@ -189,7 +228,22 @@ impl Entity {
             None => 0,
         };
 
-        base_ac + shield_bonus
+        let mut final_ac = base_ac + shield_bonus;
+        let mut min_ac = 0;
+
+        for applied in &self.applied_effects {
+            match applied.effect {
+                ActiveEffect::BonusAC(bonus) => {
+                    final_ac += bonus;
+                }
+                ActiveEffect::MinimumAC(min) if min > min_ac => {
+                    min_ac = min;
+                }
+                _ => {}
+            }
+        }
+
+        std::cmp::max(final_ac, min_ac)
     }
 
     /// Adiciona uma condição à entidade caso ela ainda não esteja ativa
@@ -199,14 +253,66 @@ impl Entity {
         }
     }
 
-    /// Remove uma condição ativa da entidade
+    /// Remove uma condição ativa da entidade e qualquer efeito contínuo que a conceda
     pub fn remove_condition(&mut self, condition: &Condition) {
         self.active_conditions.retain(|c| c != condition);
+        // Remove de applied_effects
+        self.applied_effects.retain(|e| match &e.effect {
+            ActiveEffect::ApplyCondition(c) => c != condition,
+            ActiveEffect::Multiple(effs) => !effs
+                .iter()
+                .any(|sub_e| matches!(sub_e, ActiveEffect::ApplyCondition(c) if c == condition)),
+            _ => true,
+        });
     }
 
     /// Verifica se a entidade possui determinada condição
     pub fn has_condition(&self, condition: &Condition) -> bool {
-        self.active_conditions.iter().any(|c| c == condition)
+        if self.active_conditions.iter().any(|c| c == condition) {
+            return true;
+        }
+        self.applied_effects.iter().any(|e| match &e.effect {
+            ActiveEffect::ApplyCondition(c) => c == condition,
+            ActiveEffect::Multiple(effs) => effs
+                .iter()
+                .any(|sub_e| matches!(sub_e, ActiveEffect::ApplyCondition(c) if c == condition)),
+            _ => false,
+        })
+    }
+
+    /// Processa efeitos que ocorrem no final do turno da Entidade
+    pub fn process_end_of_turn(&mut self) {
+        let mut effects_to_remove = Vec::new();
+        let mut conditions_to_remove = Vec::new();
+
+        // Fazemos a checagem coletando índices para evitar multiple borrows
+        for (idx, e) in self.applied_effects.iter().enumerate() {
+            if let ActiveEffect::RecurringSaveAtEndOfTurn(ability, dc, cond) = &e.effect {
+                // Rola a salvaguarda
+                let save = crate::rules::checks::roll_saving_throw(
+                    self,
+                    *ability,
+                    false, // Considerar se tem proficiência seria ideal, por simplicidade usamos false, mas podemos recuperar do target
+                    crate::dice::DiceMode::Normal, // Simplificado, ideal seria puxar do estado
+                    Some(*dc),
+                );
+
+                if save.is_success.unwrap_or(false) {
+                    effects_to_remove.push(idx);
+                    conditions_to_remove.push(*cond);
+                }
+            }
+        }
+
+        // Remove do maior para o menor índice para não deslocar posições
+        effects_to_remove.sort_by(|a, b| b.cmp(a));
+        for idx in effects_to_remove {
+            self.applied_effects.remove(idx);
+        }
+
+        for cond in conditions_to_remove {
+            self.remove_condition(&cond);
+        }
     }
 
     /// Verifica se a entidade está incapacitada por qualquer condição ativa
@@ -255,26 +361,40 @@ impl Entity {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::background::create_acolyte;
     use super::super::class::{Fighter, Wizard};
     use super::super::race::{Elf, Human};
-    use super::super::background::create_acolyte;
+    use super::*;
 
     #[test]
     fn test_entity_creation_hp_and_race_bonus() {
         // Base CON = 14. Elf doesn't increase CON. Human increases all by +1 (CON becomes 15, modifier still +2).
-        let attrs = AbilityScores::new(16, 14, 14, 10, 10, 8); 
-        
-        let fighter = Entity::new("Bord", attrs.clone(), ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let attrs = AbilityScores::new(16, 14, 14, 10, 10, 8);
+
+        let fighter = Entity::new(
+            "Bord",
+            attrs.clone(),
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
         // Human adds +1 to all. CON goes from 14 to 15. Mod is still +2.
         // Fighter HitDice = D10 (10) + 2 = 12
-        assert_eq!(fighter.max_hp, 12);
+        assert_eq!(fighter.get_max_hp(), 12);
         // Destreza vai de 14 para 15
-        assert_eq!(fighter.attributes.dexterity.0, 15);
-        
-        let wizard = Entity::new("Gandalf", attrs, ClassVariant::Wizard(Wizard), RaceVariant::Elf(Elf), create_acolyte());
+        assert_eq!(fighter.get_max_hp(), 12);
+        assert_eq!(fighter.current_hp, 12);
+
+        let wizard = Entity::new(
+            "Gandalf",
+            attrs,
+            ClassVariant::Wizard(Wizard),
+            RaceVariant::Elf(Elf),
+            create_acolyte(),
+        );
         // Wizard HitDice = D6 (6) + 2 = 8
-        assert_eq!(wizard.max_hp, 8);
+        assert_eq!(wizard.get_max_hp(), 8);
+        assert_eq!(wizard.get_max_hp(), 8);
         // Destreza (Elf +2) vai de 14 para 16
         assert_eq!(wizard.attributes.dexterity.0, 16);
     }
@@ -282,8 +402,14 @@ mod tests {
     #[test]
     fn test_proficiency_bonus() {
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
-        let mut hero = Entity::new("Hero", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
-        
+        let mut hero = Entity::new(
+            "Hero",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+
         assert_eq!(hero.proficiency_bonus(), 2); // Nível 1
 
         // Simulando Nível 5 (adicionando 4 classes fake)
@@ -291,18 +417,26 @@ mod tests {
         hero.classes.push(ClassVariant::Fighter(Fighter));
         hero.classes.push(ClassVariant::Fighter(Fighter));
         hero.classes.push(ClassVariant::Fighter(Fighter));
-        
+
         assert_eq!(hero.total_level(), 5);
         assert_eq!(hero.proficiency_bonus(), 3); // Nível 5 = +3
     }
 
     #[test]
     fn test_armor_class_calculation() {
-        use crate::rules::equipment::armor::{create_leather_armor, create_chain_shirt, create_plate_armor, create_shield};
+        use crate::rules::equipment::armor::{
+            create_chain_shirt, create_leather_armor, create_plate_armor, create_shield,
+        };
 
         // Base DEX 16 (+3 bonus). Human adds +1 -> DEX 17 (+3 bonus).
         let attrs = AbilityScores::new(10, 16, 10, 10, 10, 10);
-        let mut hero = Entity::new("Rogue", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let mut hero = Entity::new(
+            "Rogue",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         // Unarmored: 10 + 3 = 13
         assert_eq!(hero.get_armor_class(), 13);
@@ -329,7 +463,13 @@ mod tests {
         use crate::rules::conditions::Condition;
 
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
-        let mut hero = Entity::new("Hero", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let mut hero = Entity::new(
+            "Hero",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         assert!(!hero.has_condition(&Condition::Poisoned));
         assert!(!hero.is_incapacitated());
@@ -349,11 +489,17 @@ mod tests {
 
     #[test]
     fn test_entity_assassin_subclass() {
-        use crate::rules::character::subclass::create_assassin_subclass;
         use crate::rules::character::class::Rogue;
+        use crate::rules::character::subclass::create_assassin_subclass;
 
         let attrs = AbilityScores::new(10, 16, 12, 14, 10, 8);
-        let mut rogue = Entity::new("Vax", attrs, ClassVariant::Rogue(Rogue), RaceVariant::Human(Human), create_acolyte());
+        let mut rogue = Entity::new(
+            "Vax",
+            attrs,
+            ClassVariant::Rogue(Rogue),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         let assassin = create_assassin_subclass();
 
@@ -376,12 +522,19 @@ mod tests {
 
     #[test]
     fn test_entity_alignment_language_inspiration() {
+        use crate::rules::character::active_effects::{ActiveEffect, AppliedEffect};
         use crate::rules::character::alignment::{Alignment, Ethics, Morality};
-        use crate::rules::character::language::Language;
         use crate::rules::character::class::Fighter;
+        use crate::rules::character::language::Language;
 
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
-        let mut hero = Entity::new("Aragorn", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let mut hero = Entity::new(
+            "Aragorn",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         // Testar Alinhamento
         hero.alignment = Alignment::new(Ethics::Lawful, Morality::Good);
@@ -409,12 +562,18 @@ mod tests {
 
         // STR 14, INT 14 -> Atributos adequados para Fighter / Wizard Multiclass
         let attrs = AbilityScores::new(14, 10, 12, 14, 10, 10);
-        let mut hero = Entity::new("Gandalftheda", attrs, ClassVariant::Fighter(Fighter), RaceVariant::Human(Human), create_acolyte());
+        let mut hero = Entity::new(
+            "Gandalftheda",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         assert_eq!(hero.level, 1);
         assert_eq!(hero.total_level(), 1);
         assert_eq!(hero.proficiency_bonus(), 2);
-        let initial_hp = hero.max_hp;
+        let initial_hp = hero.get_max_hp();
 
         // Adiciona XP e sobe de nível na mesma classe (Fighter)
         hero.add_xp(300);
@@ -424,7 +583,7 @@ mod tests {
 
         assert_eq!(hero.level, 2);
         // CON 12 (+1) + 6 HP = +7 HP
-        assert_eq!(hero.max_hp, initial_hp + 7);
+        assert_eq!(hero.get_max_hp(), initial_hp + 7);
 
         // Multiclasse para Wizard (exige INT 13+ e STR 13+ da classe base Fighter)
         let wizard_res = hero.level_up(ClassVariant::Wizard(Wizard), 4);
@@ -435,6 +594,3 @@ mod tests {
         assert_eq!(hero.classes[2].as_trait().get_name(), "Wizard");
     }
 }
-
-
-

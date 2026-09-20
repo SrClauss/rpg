@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
+use crate::rules::character::active_effects::{ActiveEffect, DurationType};
 use crate::rules::character::attributes::Ability;
 use crate::rules::equipment::weapons::DamageType;
+use serde::{Deserialize, Serialize};
 
 /// Escolas de Magia do D&D 5e
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,6 +44,18 @@ impl Components {
     pub fn v() -> Self {
         Self::new(true, false, None)
     }
+
+    pub fn s() -> Self {
+        Self::new(false, true, None)
+    }
+
+    pub fn vm(material: &str) -> Self {
+        Self::new(true, false, Some(material))
+    }
+
+    pub fn sm(material: &str) -> Self {
+        Self::new(false, true, Some(material))
+    }
 }
 
 /// Tipos de Efeito que uma Magia pode causar
@@ -52,6 +65,8 @@ pub enum SpellEffect {
     SpellAttack {
         damage_dice: String,
         damage_type: DamageType,
+        damage_scaling: Option<String>, // Regra de escalonamento (ex: "cantrip")
+        on_hit_effect: Option<Box<SpellEffect>>,
     },
     /// Exige Teste de Salvaguarda do alvo
     SaveThrow {
@@ -59,15 +74,57 @@ pub enum SpellEffect {
         half_damage_on_save: bool,
         damage_dice: Option<String>,
         damage_type: Option<DamageType>,
+        damage_scaling: Option<String>,
+        fail_effect: Option<Box<SpellEffect>>,
     },
     /// Restauração de Pontos de Vida
-    Healing {
+    Healing { healing_dice: String },
+    /// Curar em área ou em alvos múltiplos
+    MultiTargetHealing {
+        max_targets: u32,
         healing_dice: String,
     },
-    /// Efeito Utilitário / Condição
-    Utility {
+    /// Aplica um Efeito Ativo (Buff/Debuff) na Entidade alvo
+    ApplyEffect {
+        effect: ActiveEffect,
+        duration: DurationType,
+    },
+    /// Efeito Utilitário / Condição (Narrativo)
+    Utility { description: String },
+    /// Modifica o terreno do campo de batalha (Grid Hexagonal) criando um Perigo de Terreno
+    AreaHazard {
+        radius_feet: u32,
+        save_ability: Option<Ability>,
+        condition: Option<crate::rules::conditions::Condition>,
+        damage_dice: Option<String>,
+        damage_type: Option<DamageType>,
         description: String,
     },
+    /// Ataque Mágico com Múltiplos Alvos / Projéteis automáticos (ex: Magic Missile)
+    MultiTargetSpellAttack {
+        projectiles_count: u32,
+        damage_dice: String,
+        damage_type: DamageType,
+        auto_hit: bool,
+    },
+    /// Combinação de múltiplos efeitos simultâneos (ex: Dano + Aplicação de Debuff)
+    Compound(Vec<SpellEffect>),
+    /// Permite que a magia tenha múltiplas opções de efeito, das quais o conjurador deve escolher uma.
+    Choice(Vec<(String, Box<SpellEffect>)>),
+    /// Efeito especial da magia Sleep (Adormece criaturas em ordem de PV)
+    Sleep { pool_dice: String, radius_feet: u32 },
+    /// Invocação (Cria entidades no campo de batalha)
+    Summon { creature_name: String, count: u32 },
+    /// Invoca uma criatura
+    SummonCreature { monster_id: String },
+    /// Aplica um Efeito Ativo (Buff/Debuff) em múltiplos alvos (ex: Aid, Bless)
+    MultiTargetApplyEffect {
+        max_targets: u32,
+        effect: ActiveEffect,
+        duration: DurationType,
+    },
+    /// Remove uma das condições especificadas do alvo
+    CureCondition(Vec<crate::rules::conditions::Condition>),
 }
 
 /// Representa uma Magia do SRD D&D 5e
@@ -81,10 +138,12 @@ pub struct Spell {
     pub components: Components,
     pub duration: String,
     pub requires_concentration: bool,
+    pub is_ritual: bool,
     pub effect: SpellEffect,
 }
 
 impl Spell {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: &str,
         level: u8,
@@ -94,6 +153,7 @@ impl Spell {
         components: Components,
         duration: &str,
         requires_concentration: bool,
+        is_ritual: bool,
         effect: SpellEffect,
     ) -> Self {
         Self {
@@ -105,6 +165,7 @@ impl Spell {
             components,
             duration: duration.to_string(),
             requires_concentration,
+            is_ritual,
             effect,
         }
     }
@@ -125,9 +186,12 @@ pub fn create_fire_bolt() -> Spell {
         Components::vs(),
         "Instantaneous",
         false,
+        false,
         SpellEffect::SpellAttack {
             damage_dice: "1d10".to_string(),
-            damage_type: DamageType::Slashing, // Usando Slashing enquanto não expandimos para Fire
+            damage_type: DamageType::Fire,
+            damage_scaling: Some("cantrip".to_string()),
+            on_hit_effect: None,
         },
     )
 }
@@ -141,6 +205,7 @@ pub fn create_cure_wounds() -> Spell {
         0, // Toque
         Components::vs(),
         "Instantaneous",
+        false,
         false,
         SpellEffect::Healing {
             healing_dice: "1d8".to_string(),
@@ -158,11 +223,14 @@ pub fn create_fireball() -> Spell {
         Components::vsm("A tiny ball of bat guano and sulfur"),
         "Instantaneous",
         false,
+        false,
         SpellEffect::SaveThrow {
             save_ability: Ability::Dexterity,
             half_damage_on_save: true,
             damage_dice: Some("8d6".to_string()),
             damage_type: Some(DamageType::Bludgeoning),
+            damage_scaling: Some("spell_slot".to_string()),
+            fail_effect: None,
         },
     )
 }
@@ -181,6 +249,9 @@ mod tests {
         let fireball = create_fireball();
         assert!(!fireball.is_cantrip());
         assert_eq!(fireball.level, 3);
-        assert_eq!(fireball.components.material, Some("A tiny ball of bat guano and sulfur".to_string()));
+        assert_eq!(
+            fireball.components.material,
+            Some("A tiny ball of bat guano and sulfur".to_string())
+        );
     }
 }

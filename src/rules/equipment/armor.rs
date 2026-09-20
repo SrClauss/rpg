@@ -25,6 +25,7 @@ pub struct Armor {
 }
 
 impl Armor {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: &str,
         name: &str,
@@ -54,58 +55,201 @@ impl Armor {
 
 // --- ARMADURAS LEVES ---
 pub fn create_padded_armor() -> Armor {
-    Armor::new("padded", "Padded Armor", ArmorCategory::Light, 11, 5, 8, false, 0, true, 0)
+    Armor::new(
+        "padded",
+        "Padded Armor",
+        ArmorCategory::Light,
+        11,
+        5,
+        8,
+        false,
+        0,
+        true,
+        0,
+    )
 }
 
 pub fn create_leather_armor() -> Armor {
-    Armor::new("leather", "Leather Armor", ArmorCategory::Light, 11, 10, 10, false, 0, false, 0)
+    Armor::new(
+        "leather",
+        "Leather Armor",
+        ArmorCategory::Light,
+        11,
+        10,
+        10,
+        false,
+        0,
+        false,
+        0,
+    )
 }
 
 pub fn create_studded_leather_armor() -> Armor {
-    Armor::new("studded_leather", "Studded Leather Armor", ArmorCategory::Light, 12, 45, 13, false, 0, false, 0)
+    Armor::new(
+        "studded_leather",
+        "Studded Leather Armor",
+        ArmorCategory::Light,
+        12,
+        45,
+        13,
+        false,
+        0,
+        false,
+        0,
+    )
 }
 
 // --- ARMADURAS MÉDIAS ---
 pub fn create_hide_armor() -> Armor {
-    Armor::new("hide", "Hide Armor", ArmorCategory::Medium, 12, 10, 12, true, 2, false, 0)
+    Armor::new(
+        "hide",
+        "Hide Armor",
+        ArmorCategory::Medium,
+        12,
+        10,
+        12,
+        true,
+        2,
+        false,
+        0,
+    )
 }
 
 pub fn create_chain_shirt() -> Armor {
-    Armor::new("chain_shirt", "Chain Shirt", ArmorCategory::Medium, 13, 50, 20, true, 2, false, 0)
+    Armor::new(
+        "chain_shirt",
+        "Chain Shirt",
+        ArmorCategory::Medium,
+        13,
+        50,
+        20,
+        true,
+        2,
+        false,
+        0,
+    )
 }
 
 pub fn create_scale_mail() -> Armor {
-    Armor::new("scale_mail", "Scale Mail", ArmorCategory::Medium, 14, 50, 45, true, 2, true, 0)
+    Armor::new(
+        "scale_mail",
+        "Scale Mail",
+        ArmorCategory::Medium,
+        14,
+        50,
+        45,
+        true,
+        2,
+        true,
+        0,
+    )
 }
 
 pub fn create_breastplate() -> Armor {
-    Armor::new("breastplate", "Breastplate", ArmorCategory::Medium, 14, 400, 20, true, 2, false, 0)
+    Armor::new(
+        "breastplate",
+        "Breastplate",
+        ArmorCategory::Medium,
+        14,
+        400,
+        20,
+        true,
+        2,
+        false,
+        0,
+    )
 }
 
 pub fn create_half_plate() -> Armor {
-    Armor::new("half_plate", "Half Plate Armor", ArmorCategory::Medium, 15, 750, 40, true, 2, true, 0)
+    Armor::new(
+        "half_plate",
+        "Half Plate Armor",
+        ArmorCategory::Medium,
+        15,
+        750,
+        40,
+        true,
+        2,
+        true,
+        0,
+    )
 }
 
 // --- ARMADURAS PESADAS ---
 pub fn create_ring_mail() -> Armor {
-    Armor::new("ring_mail", "Ring Mail", ArmorCategory::Heavy, 14, 30, 40, true, 0, true, 0)
+    Armor::new(
+        "ring_mail",
+        "Ring Mail",
+        ArmorCategory::Heavy,
+        14,
+        30,
+        40,
+        true,
+        0,
+        true,
+        0,
+    )
 }
 
 pub fn create_chain_mail() -> Armor {
-    Armor::new("chain_mail", "Chain Mail", ArmorCategory::Heavy, 16, 75, 55, true, 0, true, 13)
+    Armor::new(
+        "chain_mail",
+        "Chain Mail",
+        ArmorCategory::Heavy,
+        16,
+        75,
+        55,
+        true,
+        0,
+        true,
+        13,
+    )
 }
 
 pub fn create_splint_armor() -> Armor {
-    Armor::new("splint", "Splint Armor", ArmorCategory::Heavy, 17, 200, 60, true, 0, true, 15)
+    Armor::new(
+        "splint",
+        "Splint Armor",
+        ArmorCategory::Heavy,
+        17,
+        200,
+        60,
+        true,
+        0,
+        true,
+        15,
+    )
 }
 
 pub fn create_plate_armor() -> Armor {
-    Armor::new("plate", "Plate Armor", ArmorCategory::Heavy, 18, 1500, 65, true, 0, true, 15)
+    Armor::new(
+        "plate",
+        "Plate Armor",
+        ArmorCategory::Heavy,
+        18,
+        1500,
+        65,
+        true,
+        0,
+        true,
+        15,
+    )
 }
 
 // --- ESCUDO ---
 pub fn create_shield() -> Armor {
-    Armor::new("shield", "Shield", ArmorCategory::Shield, 2, 10, 6, false, 0, false, 0)
+    Armor::new(
+        "shield",
+        "Shield",
+        ArmorCategory::Shield,
+        2,
+        10,
+        6,
+        false,
+        0,
+        false,
+        0,
+    )
 }
 
 /// Retorna todas as 13 armaduras oficiais do SRD 5.1

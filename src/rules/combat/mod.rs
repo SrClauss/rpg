@@ -1,5 +1,6 @@
+pub mod actions;
 pub mod attack;
-pub mod initiative;
+pub mod cover;
+pub mod death;
 pub mod encounter;
-
-
+pub mod initiative;

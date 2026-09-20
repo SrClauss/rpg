@@ -1,9 +1,10 @@
-pub mod character;
-pub mod equipment;
 pub mod adventuring;
+pub mod character;
 pub mod checks;
-pub mod conditions;
 pub mod combat;
-pub mod spells;
+pub mod conditions;
+pub mod equipment;
+pub mod feats;
 pub mod monsters;
-
+pub mod spells;
+pub mod homebrew_loader;

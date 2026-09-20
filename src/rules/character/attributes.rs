@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// As 6 habilidades básicas (Ability Scores) do D&D 5e
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Ability {
     Strength,
     Dexterity,

@@ -1,7 +1,9 @@
-pub mod gemini;
 pub mod grid;
-pub mod overlay;
+pub mod movement;
+pub mod visibility;
 
-pub use gemini::{BattleMapImages, GeminiClient, MapMetadata};
-pub use grid::{BattleGrid, HexPosition, Obstacle, TerrainRegion, TerrainType, Token, TokenType};
-pub use overlay::draw_hex_grid_overlay;
+pub use grid::{
+    BattleGrid, HexPosition, Obstacle, Posture, TerrainRegion, TerrainType, Token, TokenType,
+};
+pub use movement::{move_token, MovementResult};
+pub use visibility::{calculate_fov, has_line_of_sight, hex_line};

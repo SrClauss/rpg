@@ -15,4 +15,5 @@ imageproc = "0.23"
 rusttype = "0.9"
 surrealdb = { version = "1.5", features = ["kv-mem"] }
 rand = "0.8"
-
+rhai = { version = "1.19.0", features = ["sync", "serde"] }
+bincode = "1.3"

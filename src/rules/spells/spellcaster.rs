@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use crate::dice::DiceMode;
 use crate::rules::character::attributes::Ability;
 use crate::rules::character::entity::Entity;
 use crate::rules::checks::{roll_saving_throw, CheckResult};
+use serde::{Deserialize, Serialize};
 
 /// Representa a quantidade de Espaços de Magia (Spell Slots) por nível (1 a 9)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -116,9 +116,9 @@ impl Entity {
 mod tests {
     use super::*;
     use crate::rules::character::attributes::AbilityScores;
-    use crate::rules::character::class::{Wizard, ClassVariant};
-    use crate::rules::character::race::{Human, RaceVariant};
     use crate::rules::character::background::create_acolyte;
+    use crate::rules::character::class::{ClassVariant, Wizard};
+    use crate::rules::character::race::{Human, RaceVariant};
 
     #[test]
     fn test_spell_slots_management() {
@@ -140,7 +140,13 @@ mod tests {
     #[test]
     fn test_concentration_check_on_damage() {
         let attrs = AbilityScores::new(10, 10, 14, 16, 10, 10); // CON 14 (+2, +1 Human = 15 -> +2)
-        let mut wizard = Entity::new("Mage", attrs, ClassVariant::Wizard(Wizard), RaceVariant::Human(Human), create_acolyte());
+        let mut wizard = Entity::new(
+            "Mage",
+            attrs,
+            ClassVariant::Wizard(Wizard),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
 
         wizard.active_concentration = Some(ActiveConcentration {
             spell_name: "Fly".to_string(),

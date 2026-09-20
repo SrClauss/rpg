@@ -30,7 +30,13 @@ pub struct Subclass {
 }
 
 impl Subclass {
-    pub fn new(id: &str, name: &str, parent_class: &str, unlock_level: u8, description: &str) -> Self {
+    pub fn new(
+        id: &str,
+        name: &str,
+        parent_class: &str,
+        unlock_level: u8,
+        description: &str,
+    ) -> Self {
         Self {
             id: id.to_string(),
             name: name.to_string(),
@@ -135,7 +141,8 @@ mod tests {
         assert!(json.contains("Assassinate"));
         assert!(json.contains("Disguise Kit"));
 
-        let deserialized: Subclass = serde_json::from_str(&json).expect("Deve deserializar do JSON");
+        let deserialized: Subclass =
+            serde_json::from_str(&json).expect("Deve deserializar do JSON");
         assert_eq!(deserialized.id, "assassin");
         assert_eq!(deserialized.features.len(), 5);
     }

@@ -66,6 +66,9 @@ mod tests {
         assert_eq!(Language::Common.name(), "Common");
         assert_eq!(Language::Draconic.name(), "Draconic");
         assert_eq!(Language::ThievesCant.name(), "Thieves' Cant");
-        assert_eq!(Language::Custom("Thundercat".to_string()).name(), "Thundercat");
+        assert_eq!(
+            Language::Custom("Thundercat".to_string()).name(),
+            "Thundercat"
+        );
     }
 }

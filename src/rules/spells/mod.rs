@@ -1,5 +1,14 @@
+pub mod casting;
+pub mod registry;
 pub mod spell;
 pub mod spellcaster;
-pub mod casting;
-
-
+pub mod srd_cantrips;
+pub mod srd_level1;
+pub mod srd_level2;
+pub mod srd_level3;
+pub mod srd_level4;
+pub mod srd_level5;
+pub mod srd_level6;
+pub mod srd_level7;
+pub mod srd_level8;
+pub mod srd_level9;

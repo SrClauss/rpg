@@ -1,6 +1,6 @@
 use rand::Rng;
-use std::str::FromStr;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiceMode {
@@ -37,6 +37,10 @@ impl Dice {
         }
     }
 
+    pub fn d20() -> Self {
+        Self::new(20, 1, 0, DiceMode::Normal)
+    }
+
     pub fn roll(&self) -> RollResult {
         if self.sides <= 0 || self.quantity == 0 {
             return RollResult {
@@ -65,8 +69,10 @@ impl Dice {
         match self.mode {
             DiceMode::Normal => {
                 let (rolls, sum) = roll_single_set(self.quantity, self.sides);
-                let is_crit_hit = self.sides == 20 && self.quantity == 1 && rolls.first() == Some(&20);
-                let is_crit_fail = self.sides == 20 && self.quantity == 1 && rolls.first() == Some(&1);
+                let is_crit_hit =
+                    self.sides == 20 && self.quantity == 1 && rolls.first() == Some(&20);
+                let is_crit_fail =
+                    self.sides == 20 && self.quantity == 1 && rolls.first() == Some(&1);
 
                 RollResult {
                     rolls,

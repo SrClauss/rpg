@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use super::armor::Armor;
+use super::weapons::{Weapon, WeaponProperty};
 use crate::dice::Dice;
 use crate::rules::character::attributes::Ability;
 use crate::rules::conditions::Condition;
-use super::armor::Armor;
-use super::weapons::{Weapon, WeaponProperty};
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Classificação do Efeito do Item Homebrew
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -18,9 +18,7 @@ pub enum ValidatedEffect {
         condition: Option<Condition>,
     },
     /// Efeito narrativo/customizado em texto livre repassado para a IA DM interpretar
-    NarrativeCustom {
-        description: String,
-    },
+    NarrativeCustom { description: String },
     /// Item sem efeito especial descritivo
     None,
 }
@@ -54,13 +52,14 @@ impl HomebrewValidator {
         }
 
         // 2. Validação do Dado de Dano (se não for dano 0)
-        if weapon.damage_dice != "0" && weapon.damage_dice != "1" {
-            if Dice::from_str(&weapon.damage_dice).is_err() {
-                warnings.push(format!(
-                    "Notação de dado de dano '{}' não padrão. Será padronizada para 1d6 se inválida.",
-                    weapon.damage_dice
-                ));
-            }
+        if weapon.damage_dice != "0"
+            && weapon.damage_dice != "1"
+            && Dice::from_str(&weapon.damage_dice).is_err()
+        {
+            warnings.push(format!(
+                "Notação de dado de dano '{}' não padrão. Será padronizada para 1d6 se inválida.",
+                weapon.damage_dice
+            ));
         }
 
         // 3. Classificação de Efeitos Especiais
@@ -106,9 +105,13 @@ impl HomebrewValidator {
     /// Classifica uma descrição de efeito em texto livre
     pub fn classify_description_text(description: &str) -> ValidatedEffect {
         let desc_lower = description.to_lower();
-        
+
         // Verifica palavras-chave mecânicas reconhecidas pelo engine
-        if desc_lower.contains("dano") || desc_lower.contains("damage") || desc_lower.contains("cd") || desc_lower.contains("dc") {
+        if desc_lower.contains("dano")
+            || desc_lower.contains("damage")
+            || desc_lower.contains("cd")
+            || desc_lower.contains("dc")
+        {
             ValidatedEffect::Mechanical {
                 effect_name: "Custom Mechanical Effect".to_string(),
                 description: description.to_string(),
@@ -140,7 +143,9 @@ impl ToLowerExt for str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::equipment::weapons::{create_dagger, create_lance, create_net, DamageType, WeaponCategory};
+    use crate::rules::equipment::weapons::{
+        create_dagger, create_lance, create_net, DamageType, WeaponCategory,
+    };
 
     #[test]
     fn test_validate_srd_weapons() {
@@ -152,7 +157,10 @@ mod tests {
         let lance = create_lance();
         let lance_report = HomebrewValidator::validate_weapon(&lance);
         assert!(lance_report.is_valid);
-        assert!(matches!(lance_report.validated_effect, ValidatedEffect::Mechanical { .. }));
+        assert!(matches!(
+            lance_report.validated_effect,
+            ValidatedEffect::Mechanical { .. }
+        ));
     }
 
     #[test]
@@ -170,15 +178,22 @@ mod tests {
 
         let report = HomebrewValidator::validate_weapon(&custom_weapon);
         assert!(report.is_valid);
-        assert!(matches!(report.validated_effect, ValidatedEffect::NarrativeCustom { .. }));
+        assert!(matches!(
+            report.validated_effect,
+            ValidatedEffect::NarrativeCustom { .. }
+        ));
     }
 
     #[test]
     fn test_classify_description_text() {
-        let narrative = HomebrewValidator::classify_description_text("Faz o alvo esquecer quem ele é e voltar 2 turnos no tempo");
+        let narrative = HomebrewValidator::classify_description_text(
+            "Faz o alvo esquecer quem ele é e voltar 2 turnos no tempo",
+        );
         assert!(matches!(narrative, ValidatedEffect::NarrativeCustom { .. }));
 
-        let mechanical = HomebrewValidator::classify_description_text("Causa 2d6 de dano de Ácido adicional e exige CD 14");
+        let mechanical = HomebrewValidator::classify_description_text(
+            "Causa 2d6 de dano de Ácido adicional e exige CD 14",
+        );
         assert!(matches!(mechanical, ValidatedEffect::Mechanical { .. }));
     }
 }

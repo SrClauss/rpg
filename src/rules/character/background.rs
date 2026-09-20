@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::skills::Skill;
+use serde::{Deserialize, Serialize};
 
 /// Representa o Antecedente (Background) de um personagem.
 /// Em nosso motor tático, focaremos apenas nas vantagens mecânicas (Proficiências).
