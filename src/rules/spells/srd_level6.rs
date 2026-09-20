@@ -17,7 +17,9 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Creates a wall of whirling, razor-sharp blades.".to_string() },
+        SpellEffect::Utility {
+            description: "Creates a wall of whirling, razor-sharp blades.".to_string(),
+        },
     ));
 
     // 2. Chain Lightning
@@ -27,11 +29,20 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         SpellSchool::Evocation,
         "1 action",
         150,
-        Components::vsm("A bit of fur; a piece of amber, glass, or a crystal rod; and three silver pins"),
+        Components::vsm(
+            "A bit of fur; a piece of amber, glass, or a crystal rod; and three silver pins",
+        ),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("10d8".to_string()), damage_type: Some(DamageType::Lightning), damage_scaling: Some("1d8".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("10d8".to_string()),
+            damage_type: Some(DamageType::Lightning),
+            damage_scaling: Some("1d8".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 3. Circle of Death
@@ -43,9 +54,16 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         150,
         Components::vsm("The powder of a crushed black pearl worth at least 500 gp"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("8d6".to_string()), damage_type: Some(DamageType::Necrotic), damage_scaling: Some("2d6".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("8d6".to_string()),
+            damage_type: Some(DamageType::Necrotic),
+            damage_scaling: Some("2d6".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 4. Conjure Fey
@@ -59,7 +77,10 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "1 hour",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Summon { creature_name: "Fey".to_string(), count: 1 },
+        SpellEffect::Summon {
+            creature_name: "Fey".to_string(),
+            count: 1,
+        },
     ));
 
     // 5. Contingency
@@ -99,9 +120,16 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         60,
         Components::vsm("A lodestone and a pinch of dust"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: false, damage_dice: Some("10d6+40".to_string()), damage_type: Some(DamageType::Force), damage_scaling: Some("3d6".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: false,
+            damage_dice: Some("10d6+40".to_string()),
+            damage_type: Some(DamageType::Force),
+            damage_scaling: Some("3d6".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 8. Eyebite
@@ -115,7 +143,9 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Inflict dread, sickness, or sleep on a creature you can see.".to_string() },
+        SpellEffect::Utility {
+            description: "Inflict dread, sickness, or sleep on a creature you can see.".to_string(),
+        },
     ));
 
     // 9. Find the Path
@@ -139,11 +169,17 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         SpellSchool::Abjuration,
         "10 minutes",
         0,
-        Components::vsm("A sprinkling of holy water, rare incense, and ruby dust worth at least 1,000 gp"),
+        Components::vsm(
+            "A sprinkling of holy water, rare incense, and ruby dust worth at least 1,000 gp",
+        ),
         "1 day",
-        false,  // Concentration
-        true, // Ritual
-        SpellEffect::Utility { description: "Protect up to 40,000 square feet against magical travel and planar creatures.".to_string() },
+        false, // Concentration
+        true,  // Ritual
+        SpellEffect::Utility {
+            description:
+                "Protect up to 40,000 square feet against magical travel and planar creatures."
+                    .to_string(),
+        },
     ));
 
     // 11. Globe of Invulnerability
@@ -183,9 +219,16 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("14d6".to_string()), damage_type: Some(DamageType::Necrotic), damage_scaling: None, fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("14d6".to_string()),
+            damage_type: Some(DamageType::Necrotic),
+            damage_scaling: None,
+            fail_effect: None,
+        },
     ));
 
     // 14. Heal
@@ -197,9 +240,11 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Healing { healing_dice: "70".to_string() },
+        SpellEffect::Healing {
+            healing_dice: "70".to_string(),
+        },
     ));
 
     // 15. Heroes' Feast
@@ -211,9 +256,12 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         30,
         Components::vsm("A gem-encrusted bowl worth at least 1,000 gp, which the spell consumes"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Bring forth a great feast, including magnificent food and drink.".to_string() },
+        SpellEffect::Utility {
+            description: "Bring forth a great feast, including magnificent food and drink."
+                .to_string(),
+        },
     ));
 
     // 16. Instant Summons
@@ -251,11 +299,15 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         SpellSchool::Transmutation,
         "1 action",
         120,
-        Components::vsm("An iron blade and a small bag containing a mixture of soils—clay, loam, and sand"),
+        Components::vsm(
+            "An iron blade and a small bag containing a mixture of soils—clay, loam, and sand",
+        ),
         "2 hours",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Reshape dirt, sand, or clay in the area.".to_string() },
+        SpellEffect::Utility {
+            description: "Reshape dirt, sand, or clay in the area.".to_string(),
+        },
     ));
 
     // 19. Planar Ally
@@ -267,9 +319,11 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Beseech an otherworldly entity for aid.".to_string() },
+        SpellEffect::Utility {
+            description: "Beseech an otherworldly entity for aid.".to_string(),
+        },
     ));
 
     // 20. Programmed Illusion
@@ -297,7 +351,17 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("6d8".to_string()), damage_type: Some(DamageType::Radiant), damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::ApplyEffect { effect: ActiveEffect::Utility("Blinded".to_string()), duration: DurationType::UntilEndOfNextTurn })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("6d8".to_string()),
+            damage_type: Some(DamageType::Radiant),
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
+                effect: ActiveEffect::Utility("Blinded".to_string()),
+                duration: DurationType::UntilEndOfNextTurn,
+            })),
+        },
     ));
 
     // 22. Transport via Plants
@@ -339,7 +403,9 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a wall of ice on a solid surface within range.".to_string() },
+        SpellEffect::Utility {
+            description: "Create a wall of ice on a solid surface within range.".to_string(),
+        },
     ));
 
     // 25. Wall of Thorns
@@ -353,7 +419,11 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a wall of tough, pliable, tangled brush bristling with needle-sharp thorns.".to_string() },
+        SpellEffect::Utility {
+            description:
+                "Create a wall of tough, pliable, tangled brush bristling with needle-sharp thorns."
+                    .to_string(),
+        },
     ));
 
     // 26. Wind Walk
@@ -369,7 +439,6 @@ pub fn load_level6_spells(reg: &mut SpellRegistry) {
         false, // Ritual
         SpellEffect::Utility { description: "You and up to ten willing creatures you can see assume a gaseous form for the duration, appearing as wisps of cloud.".to_string() },
     ));
-
 }
 
 #[cfg(test)]
@@ -450,14 +519,16 @@ mod tests {
     fn test_globe_of_invulnerability_spell() {
         let mut reg = SpellRegistry::new();
         load_level6_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Globe of Invulnerability").expect("Globe of Invulnerability not found");
+        let spell = SpellRegistry::get_spell("Globe of Invulnerability")
+            .expect("Globe of Invulnerability not found");
         assert_eq!(spell.level, 6);
     }
     #[test]
     fn test_guards_and_wards_spell() {
         let mut reg = SpellRegistry::new();
         load_level6_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Guards and Wards").expect("Guards and Wards not found");
+        let spell =
+            SpellRegistry::get_spell("Guards and Wards").expect("Guards and Wards not found");
         assert_eq!(spell.level, 6);
     }
     #[test]
@@ -492,7 +563,8 @@ mod tests {
     fn test_irresistible_dance_spell() {
         let mut reg = SpellRegistry::new();
         load_level6_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Irresistible Dance").expect("Irresistible Dance not found");
+        let spell =
+            SpellRegistry::get_spell("Irresistible Dance").expect("Irresistible Dance not found");
         assert_eq!(spell.level, 6);
     }
     #[test]
@@ -513,7 +585,8 @@ mod tests {
     fn test_programmed_illusion_spell() {
         let mut reg = SpellRegistry::new();
         load_level6_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Programmed Illusion").expect("Programmed Illusion not found");
+        let spell =
+            SpellRegistry::get_spell("Programmed Illusion").expect("Programmed Illusion not found");
         assert_eq!(spell.level, 6);
     }
     #[test]
@@ -527,7 +600,8 @@ mod tests {
     fn test_transport_via_plants_spell() {
         let mut reg = SpellRegistry::new();
         load_level6_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Transport via Plants").expect("Transport via Plants not found");
+        let spell = SpellRegistry::get_spell("Transport via Plants")
+            .expect("Transport via Plants not found");
         assert_eq!(spell.level, 6);
     }
     #[test]

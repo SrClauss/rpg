@@ -182,7 +182,7 @@ mod tests {
         let mut goblin = Monster::new(
             "goblin",
             base_entity,
-            CreatureType::Humanoid("goblinoid".to_string()),
+            CreatureType::Humanoid(Some("goblinoid".to_string())),
             CreatureSize::Small,
             0.25,
             50,

@@ -38,18 +38,45 @@ pub fn resolve_attack(
     affinity: DamageAffinity,
 ) -> AttackResult {
     let mut final_mode = mode;
-    let has_advantage_effect = defender.applied_effects.iter().any(|e| {
+    let mut has_advantage_effect = defender.applied_effects.iter().any(|e| {
         matches!(
             e.effect,
             crate::rules::character::active_effects::ActiveEffect::GrantsAdvantageToAttackers
         )
     });
-    let has_disadvantage_effect = defender.applied_effects.iter().any(|e| {
+    let mut has_disadvantage_effect = defender.applied_effects.iter().any(|e| {
         matches!(
             e.effect,
             crate::rules::character::active_effects::ActiveEffect::DisadvantageOnAttacksAgainstMe
         )
     });
+
+    let is_ranged_attack = matches!(
+        weapon.category,
+        crate::rules::equipment::weapons::WeaponCategory::SimpleRanged
+            | crate::rules::equipment::weapons::WeaponCategory::MartialRanged
+    ) || weapon
+        .properties
+        .iter()
+        .any(|p| matches!(p, WeaponProperty::Thrown(_, _)));
+
+    let is_spell_attack = weapon.id.starts_with("spell_");
+
+    if is_spell_attack {
+        let has_spell_disadvantage = defender.applied_effects.iter().any(|e| {
+            matches!(e.effect, crate::rules::character::active_effects::ActiveEffect::DisadvantageOnSpellAttacksAgainstMe)
+        });
+        has_disadvantage_effect = has_disadvantage_effect || has_spell_disadvantage;
+    }
+
+    let has_creature_type_disadvantage = attacker.applied_effects.iter().any(|e| {
+        if let crate::rules::character::active_effects::ActiveEffect::DisadvantageOnAttacksAgainstCreatureType(ctype) = &e.effect {
+            ctype == &defender.get_creature_type()
+        } else {
+            false
+        }
+    });
+    has_disadvantage_effect = has_disadvantage_effect || has_creature_type_disadvantage;
 
     if has_advantage_effect && !has_disadvantage_effect {
         final_mode = DiceMode::Advantage;
@@ -63,8 +90,16 @@ pub fn resolve_attack(
     let dex_mod = attacker.attributes.get_modifier(Ability::Dexterity) as i32;
 
     // Se a arma tiver Acuidade (Finesse), utiliza o maior modificador entre FOR e DES
+    let is_ranged_weapon = matches!(
+        weapon.category,
+        crate::rules::equipment::weapons::WeaponCategory::SimpleRanged
+            | crate::rules::equipment::weapons::WeaponCategory::MartialRanged
+    );
+
     let ability_mod = if weapon.has_property(WeaponProperty::Finesse) {
         str_mod.max(dex_mod)
+    } else if is_ranged_weapon {
+        dex_mod
     } else {
         str_mod
     };
@@ -79,7 +114,7 @@ pub fn resolve_attack(
         attack_mod += attacker.proficiency_bonus();
     }
 
-    let mut magic_weapon_bonus = 0;
+    let mut magic_weapon_bonus = weapon.magic_bonus;
     for applied in &attacker.applied_effects {
         if let crate::rules::character::active_effects::ActiveEffect::MagicWeaponBonus(b) =
             &applied.effect
@@ -89,7 +124,16 @@ pub fn resolve_attack(
     }
     attack_mod += magic_weapon_bonus;
 
-    let target_ac = defender.get_armor_class();
+    let mut target_ac = defender.get_armor_class();
+    if is_ranged_attack {
+        for e in &defender.applied_effects {
+            if let crate::rules::character::active_effects::ActiveEffect::BonusACAgainstRanged(b) =
+                &e.effect
+            {
+                target_ac += b;
+            }
+        }
+    }
 
     // Verifica se o defensor está sob o efeito de Sanctuary
     let is_sanctuary_blocked = defender
@@ -125,9 +169,9 @@ pub fn resolve_attack(
     // Rolagem de Ataque
     let attack_dice = Dice::new(20, 1, attack_mod, final_mode);
     let attack_roll = attack_dice.roll();
-    let target_ac = defender.get_armor_class();
+    // target_ac is already calculated
 
-    let is_critical_hit = attack_roll.is_critical_hit;
+    let mut is_critical_hit = attack_roll.is_critical_hit;
     let is_critical_fail = attack_roll.is_critical_fail;
 
     // No D&D 5e: 20 natural é acerto automático, 1 natural é falha automática
@@ -138,6 +182,19 @@ pub fn resolve_attack(
     } else {
         attack_roll.total >= target_ac
     };
+
+    // Imunidade a Acertos Críticos (ex: Adamantine Armor)
+    if is_critical_hit {
+        let is_immune_to_crit = defender.applied_effects.iter().any(|e| {
+            matches!(
+                e.effect,
+                crate::rules::character::active_effects::ActiveEffect::ImmuneToCriticalHits
+            )
+        });
+        if is_immune_to_crit {
+            is_critical_hit = false;
+        }
+    }
 
     // MIRROR IMAGE HOOK
     if is_hit {
@@ -215,6 +272,7 @@ pub fn resolve_attack(
         effect: &crate::rules::character::active_effects::ActiveEffect,
         raw_damage: &mut i32,
         is_critical_hit: bool,
+        defender_creature_type: &crate::rules::monsters::monster::CreatureType,
     ) {
         match effect {
             crate::rules::character::active_effects::ActiveEffect::NextWeaponAttackBonusDamage(
@@ -243,23 +301,130 @@ pub fn resolve_attack(
                     .unwrap_or_else(|_| Dice::new(4, 1, 0, DiceMode::Normal));
                 *raw_damage -= std::cmp::max(0, penalty_dice.roll().total);
             }
+            crate::rules::character::active_effects::ActiveEffect::ConditionalDamageAgainstCreature(
+                target_type,
+                dice_str,
+                _dmg_type,
+            ) => {
+                if target_type == defender_creature_type {
+                    let mut bonus_dice = Dice::from_str(dice_str)
+                        .unwrap_or_else(|_| Dice::new(6, 1, 0, DiceMode::Normal));
+                    if is_critical_hit {
+                        bonus_dice.quantity *= 2;
+                    }
+                    *raw_damage += std::cmp::max(0, bonus_dice.roll().total);
+                }
+            }
+            crate::rules::character::active_effects::ActiveEffect::BonusDamageOnCritical(
+                dice_str,
+                _dmg_type,
+            ) => {
+                if is_critical_hit {
+                    let bonus_dice = Dice::from_str(dice_str)
+                        .unwrap_or_else(|_| Dice::new(6, 1, 0, DiceMode::Normal));
+                    // Usually this is flat or extra dice that aren't doubled, we just roll it.
+                    *raw_damage += std::cmp::max(0, bonus_dice.roll().total);
+                }
+            }
             crate::rules::character::active_effects::ActiveEffect::Multiple(effects) => {
                 for sub in effects {
-                    process_effect_for_damage(sub, raw_damage, is_critical_hit);
+                    process_effect_for_damage(sub, raw_damage, is_critical_hit, defender_creature_type);
                 }
             }
             _ => {}
         }
     }
 
+    let defender_ctype = defender.get_creature_type();
+
+    // Weapon's own specific active effects
+    for effect in &weapon.magic_effects {
+        process_effect_for_damage(effect, &mut raw_damage, is_critical_hit, &defender_ctype);
+    }
+
     // Extra damage from Smites or Hunter's Mark
     for applied in &attacker.applied_effects {
-        process_effect_for_damage(&applied.effect, &mut raw_damage, is_critical_hit);
+        process_effect_for_damage(
+            &applied.effect,
+            &mut raw_damage,
+            is_critical_hit,
+            &defender_ctype,
+        );
     }
     raw_damage = std::cmp::max(0, raw_damage);
 
+    let mut final_damage_type = weapon.damage_type;
+    for effect in &weapon.magic_effects {
+        if let crate::rules::character::active_effects::ActiveEffect::OverrideDamageType(dt) =
+            effect
+        {
+            final_damage_type = *dt;
+        }
+    }
+
+    let mut current_affinity = affinity;
+
+    // Verifica Resistência e Vulnerabilidade nativa pelo ActiveEffect
+    let has_native_resistance = defender.applied_effects.iter().any(|e| {
+        if let crate::rules::character::active_effects::ActiveEffect::Resistance(types) = &e.effect
+        {
+            types.contains(&weapon.damage_type)
+        } else {
+            false
+        }
+    });
+
+    let has_native_vulnerability = defender.applied_effects.iter().any(|e| {
+        if let crate::rules::character::active_effects::ActiveEffect::Vulnerability(types) =
+            &e.effect
+        {
+            types.contains(&weapon.damage_type)
+        } else {
+            false
+        }
+    });
+
+    if current_affinity == DamageAffinity::Normal {
+        if has_native_vulnerability && has_native_resistance {
+            current_affinity = DamageAffinity::Normal; // Se anulam
+        } else if has_native_vulnerability {
+            current_affinity = DamageAffinity::Vulnerable;
+        } else if has_native_resistance {
+            current_affinity = DamageAffinity::Resistant;
+        }
+    }
+
+    // Verifica Imunidade/Resistência a ataques não mágicos
+    let is_magical_attack = magic_weapon_bonus > 0 || weapon.id.starts_with("spell_");
+    let is_non_magical_physical = !is_magical_attack
+        && matches!(
+            weapon.damage_type,
+            DamageType::Bludgeoning | DamageType::Piercing | DamageType::Slashing
+        );
+
+    if is_non_magical_physical {
+        let has_non_magical_resistance = defender.applied_effects.iter().any(|e| {
+            matches!(
+                e.effect,
+                crate::rules::character::active_effects::ActiveEffect::ResistanceToNonMagicalDamage
+            )
+        });
+        let has_non_magical_immunity = defender.applied_effects.iter().any(|e| {
+            matches!(
+                e.effect,
+                crate::rules::character::active_effects::ActiveEffect::ImmuneToNonMagicalDamage
+            )
+        });
+
+        if has_non_magical_immunity {
+            current_affinity = DamageAffinity::Immune;
+        } else if has_non_magical_resistance && current_affinity == DamageAffinity::Normal {
+            current_affinity = DamageAffinity::Resistant;
+        }
+    }
+
     // Aplicação de Resistência / Imunidade / Vulnerabilidade
-    let final_damage = match affinity {
+    let final_damage = match current_affinity {
         DamageAffinity::Normal => raw_damage,
         DamageAffinity::Resistant => raw_damage / 2,
         DamageAffinity::Immune => 0,
@@ -274,8 +439,8 @@ pub fn resolve_attack(
         is_critical_fail,
         raw_damage,
         final_damage,
-        damage_type: weapon.damage_type,
-        affinity,
+        damage_type: final_damage_type,
+        affinity: current_affinity,
     }
 }
 

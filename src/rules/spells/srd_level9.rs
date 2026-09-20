@@ -71,9 +71,11 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Healing { healing_dice: "700".to_string() },
+        SpellEffect::Healing {
+            healing_dice: "700".to_string(),
+        },
     ));
 
     // 6. Meteor Swarm
@@ -85,9 +87,16 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         5280,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("20d6+20d6".to_string()), damage_type: Some(DamageType::Fire), damage_scaling: None, fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("20d6+20d6".to_string()),
+            damage_type: Some(DamageType::Fire),
+            damage_scaling: None,
+            fail_effect: None,
+        },
     ));
 
     // 7. Power Word Heal
@@ -113,9 +122,12 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         60,
         Components::v(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "If the target has 100 hit points or fewer, it dies instantly.".to_string() },
+        SpellEffect::Utility {
+            description: "If the target has 100 hit points or fewer, it dies instantly."
+                .to_string(),
+        },
     ));
 
     // 9. Prismatic Wall
@@ -127,9 +139,13 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         90,
         Components::vs(),
         "10 minutes",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a wall of multi-colored, multi-layered, destructive magical light.".to_string() },
+        SpellEffect::Utility {
+            description:
+                "Create a wall of multi-colored, multi-layered, destructive magical light."
+                    .to_string(),
+        },
     ));
 
     // 10. Shapechange
@@ -155,9 +171,12 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         0,
         Components::v(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Stop the flow of time for everyone but yourself for 1d4 + 1 turns.".to_string() },
+        SpellEffect::Utility {
+            description: "Stop the flow of time for everyone but yourself for 1d4 + 1 turns."
+                .to_string(),
+        },
     ));
 
     // 12. True Polymorph
@@ -199,7 +218,18 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Wisdom, half_damage_on_save: false, damage_dice: Some("4d10".to_string()), damage_type: Some(DamageType::Psychic), damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::Utility { description: "Target is frightened and takes 4d10 psychic damage per turn on a failed save.".to_string() })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Wisdom,
+            half_damage_on_save: false,
+            damage_dice: Some("4d10".to_string()),
+            damage_type: Some(DamageType::Psychic),
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::Utility {
+                description:
+                    "Target is frightened and takes 4d10 psychic damage per turn on a failed save."
+                        .to_string(),
+            })),
+        },
     ));
 
     // 15. Wish
@@ -215,7 +245,6 @@ pub fn load_level9_spells(reg: &mut SpellRegistry) {
         false, // Ritual
         SpellEffect::Utility { description: "Alter the very foundations of reality. Can duplicate any spell of 8th level or lower, or create custom massive effects at severe risk to the caster.".to_string() },
     ));
-
 }
 
 #[cfg(test)]
@@ -226,7 +255,8 @@ mod tests {
     fn test_astral_projection_spell() {
         let mut reg = SpellRegistry::new();
         load_level9_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Astral Projection").expect("Astral Projection not found");
+        let spell =
+            SpellRegistry::get_spell("Astral Projection").expect("Astral Projection not found");
         assert_eq!(spell.level, 9);
     }
     #[test]
@@ -310,7 +340,8 @@ mod tests {
     fn test_true_resurrection_spell() {
         let mut reg = SpellRegistry::new();
         load_level9_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("True Resurrection").expect("True Resurrection not found");
+        let spell =
+            SpellRegistry::get_spell("True Resurrection").expect("True Resurrection not found");
         assert_eq!(spell.level, 9);
     }
     #[test]

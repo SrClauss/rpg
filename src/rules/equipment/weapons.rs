@@ -1,3 +1,4 @@
+use crate::rules::character::active_effects::ActiveEffect;
 use serde::{Deserialize, Serialize};
 
 /// Tipos de dano no D&D 5e
@@ -53,6 +54,10 @@ pub struct Weapon {
     pub cost_gp: u32,
     pub weight_lb: u32,
     pub properties: Vec<WeaponProperty>,
+    #[serde(default)]
+    pub magic_bonus: i32,
+    #[serde(default)]
+    pub magic_effects: Vec<ActiveEffect>,
 }
 
 impl Weapon {
@@ -76,7 +81,15 @@ impl Weapon {
             cost_gp,
             weight_lb,
             properties,
+            magic_bonus: 0,
+            magic_effects: vec![],
         }
+    }
+
+    pub fn make_magic(mut self, bonus: i32, effects: Vec<ActiveEffect>) -> Self {
+        self.magic_bonus = bonus;
+        self.magic_effects = effects;
+        self
     }
 
     /// Helper para criar um ataque mágico virtual como Arma
@@ -90,6 +103,8 @@ impl Weapon {
             cost_gp: 0,
             weight_lb: 0,
             properties: Vec::new(),
+            magic_bonus: 0,
+            magic_effects: vec![],
         }
     }
 

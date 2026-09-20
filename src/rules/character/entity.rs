@@ -8,8 +8,9 @@ use super::multiclass::can_multiclass_into;
 use super::race::{Race, RaceVariant, Size};
 use super::subclass::{Subclass, SubclassFeature};
 use crate::rules::character::active_effects::{ActiveEffect, AppliedEffect};
-use crate::rules::conditions::Condition;
+use crate::rules::conditions::{Condition, Disease, Madness, MadnessType};
 use crate::rules::equipment::armor::Armor;
+use crate::rules::equipment::magic_items::{MagicItem, MagicItemEffect};
 use crate::rules::equipment::weapons::{DamageType, Weapon};
 use crate::rules::spells::spellcaster::{ActiveConcentration, SpellSlots};
 use serde::{Deserialize, Serialize};
@@ -35,9 +36,12 @@ pub struct Entity {
     pub equipped_shield: Option<Armor>,
     pub equipped_weapons: Vec<Weapon>,
     pub active_conditions: Vec<Condition>,
+    pub active_diseases: Vec<Disease>,
+    pub active_madness: Vec<Madness>,
     pub spell_slots: Option<SpellSlots>,
     pub active_concentration: Option<ActiveConcentration>,
     pub applied_effects: Vec<AppliedEffect>,
+    pub equipped_magic_items: Vec<MagicItem>,
 }
 
 impl Entity {
@@ -100,10 +104,72 @@ impl Entity {
             equipped_shield: None,
             equipped_weapons: Vec::new(),
             active_conditions: Vec::new(),
+            active_diseases: Vec::new(),
+            active_madness: Vec::new(),
             spell_slots: None,
             active_concentration: None,
             applied_effects: Vec::new(),
+            equipped_magic_items: Vec::new(),
         }
+    }
+
+    /// Contrair uma doença (SRD p. 199-200)
+    pub fn contract_disease(&mut self, disease: Disease) {
+        if !self.active_diseases.contains(&disease) {
+            self.active_diseases.push(disease);
+            if !self.active_conditions.contains(&Condition::Diseased) {
+                self.active_conditions.push(Condition::Diseased);
+            }
+        }
+    }
+
+    /// Curar uma doença específica (ex: Restaurar Léssico / Herbalismo)
+    pub fn cure_disease(&mut self, disease: &Disease) {
+        self.active_diseases.retain(|d| d != disease);
+        if self.active_diseases.is_empty() {
+            self.active_conditions.retain(|&c| c != Condition::Diseased);
+        }
+    }
+
+    /// Curar todas as doenças (ex: Magia Restauração Menor / Maior)
+    pub fn cure_all_diseases(&mut self) {
+        self.active_diseases.clear();
+        self.active_conditions.retain(|&c| c != Condition::Diseased);
+    }
+
+    /// Verifica se possui uma doença específica
+    pub fn has_disease(&self, disease: &Disease) -> bool {
+        self.active_diseases.contains(disease)
+    }
+
+    /// Infligir Loucura (SRD p. 201-202)
+    pub fn inflict_madness(&mut self, madness: Madness) {
+        self.active_madness.push(madness);
+        if !self.active_conditions.contains(&Condition::Madness) {
+            self.active_conditions.push(Condition::Madness);
+        }
+    }
+
+    /// Curar loucuras de um tipo específico (ex: Curta/Longa Duração com Restauração Menor, Indefinida com Restauração Maior)
+    pub fn cure_madness(&mut self, madness_type: MadnessType) {
+        self.active_madness
+            .retain(|m| m.madness_type != madness_type);
+        if self.active_madness.is_empty() {
+            self.active_conditions.retain(|&c| c != Condition::Madness);
+        }
+    }
+
+    /// Curar todas as loucuras
+    pub fn cure_all_madness(&mut self) {
+        self.active_madness.clear();
+        self.active_conditions.retain(|&c| c != Condition::Madness);
+    }
+
+    /// Verifica se possui loucura de determinado tipo
+    pub fn has_madness(&self, madness_type: MadnessType) -> bool {
+        self.active_madness
+            .iter()
+            .any(|m| m.madness_type == madness_type)
     }
 
     /// Calcula o HP Máximo do personagem considerando a base e os efeitos ativos (ex: Aid)
@@ -112,6 +178,13 @@ impl Entity {
         for applied in &self.applied_effects {
             if let ActiveEffect::IncreaseMaxHP(bonus) = applied.effect {
                 total += bonus;
+            }
+        }
+        for item in &self.equipped_magic_items {
+            for effect in &item.effects {
+                if let MagicItemEffect::Passive(ActiveEffect::IncreaseMaxHP(bonus)) = effect {
+                    total += *bonus;
+                }
             }
         }
         total
@@ -204,6 +277,13 @@ impl Entity {
         (lvl / 4.0).ceil() as i32 + 1
     }
 
+    pub fn get_creature_type(&self) -> crate::rules::monsters::monster::CreatureType {
+        // Personagens jogáveis (Entity baseada em raças) são primariamente Humanóides.
+        // Raças específicas podem ser tratadas se necessário (ex: Centaur é Fey).
+        let race_name = format!("{:?}", self.race);
+        crate::rules::monsters::monster::CreatureType::Humanoid(Some(race_name))
+    }
+
     /// Calcula dinamicamente a Classe de Armadura (CA) da Entidade.
     /// Sem armadura: 10 + Modificador de Destreza.
     /// Com armadura: CA Base da Armadura + Modificador de Destreza (respeitando limites da armadura).
@@ -243,7 +323,25 @@ impl Entity {
             }
         }
 
+        for item in &self.equipped_magic_items {
+            for effect in &item.effects {
+                if let MagicItemEffect::Passive(ActiveEffect::BonusAC(bonus)) = effect {
+                    final_ac += *bonus;
+                } else if let MagicItemEffect::Passive(ActiveEffect::MinimumAC(min)) = effect {
+                    if *min > min_ac {
+                        min_ac = *min;
+                    }
+                }
+            }
+        }
+
         std::cmp::max(final_ac, min_ac)
+    }
+
+    /// Equipa um item mágico (simplificado, futuramente pode validar limites de sintonização)
+    pub fn equip_magic_item(&mut self, item: MagicItem) -> Result<(), String> {
+        self.equipped_magic_items.push(item);
+        Ok(())
     }
 
     /// Adiciona uma condição à entidade caso ela ainda não esteja ativa
@@ -592,5 +690,91 @@ mod tests {
         assert_eq!(hero.level, 3);
         assert_eq!(hero.classes.len(), 3);
         assert_eq!(hero.classes[2].as_trait().get_name(), "Wizard");
+    }
+
+    #[test]
+    fn test_disease_and_madness_mechanics() {
+        use crate::rules::character::class::Fighter;
+
+        let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
+        let mut hero = Entity::new(
+            "TestHero",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+
+        // Test Contracting Disease
+        assert!(!hero.has_disease(&Disease::CackleFever));
+        hero.contract_disease(Disease::CackleFever);
+        assert!(hero.has_disease(&Disease::CackleFever));
+        assert!(hero.active_conditions.contains(&Condition::Diseased));
+
+        // Test Inflicting Madness
+        let madness = Madness {
+            madness_type: MadnessType::ShortTerm,
+            description: "Vivid hallucinations".to_string(),
+            duration_minutes: Some(10),
+        };
+        hero.inflict_madness(madness);
+        assert!(hero.has_madness(MadnessType::ShortTerm));
+        assert!(hero.active_conditions.contains(&Condition::Madness));
+
+        // Test Curing Disease
+        hero.cure_disease(&Disease::CackleFever);
+        assert!(!hero.has_disease(&Disease::CackleFever));
+        assert!(!hero.active_conditions.contains(&Condition::Diseased));
+
+        // Test Curing Madness
+        hero.cure_madness(MadnessType::ShortTerm);
+        assert!(!hero.has_madness(MadnessType::ShortTerm));
+        assert!(!hero.active_conditions.contains(&Condition::Madness));
+    }
+
+    #[test]
+    fn test_entity_equipped_magic_items() {
+        use crate::rules::character::active_effects::ActiveEffect;
+        use crate::rules::equipment::magic_items::{
+            Attunement, MagicItem, MagicItemEffect, MagicItemType, Rarity,
+        };
+
+        let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
+        let mut hero = Entity::new(
+            "Hero",
+            attrs,
+            ClassVariant::Fighter(Fighter),
+            RaceVariant::Human(Human),
+            create_acolyte(),
+        );
+
+        let initial_ac = hero.get_armor_class(); // 10
+        let initial_hp = hero.get_max_hp();
+
+        let ring_of_protection = MagicItem::new_with_effects(
+            "Ring of Protection",
+            MagicItemType::Ring,
+            Rarity::Rare,
+            Attunement::Required,
+            None,
+            vec![MagicItemEffect::Passive(ActiveEffect::BonusAC(1))],
+            "You gain a +1 bonus to AC.",
+        );
+
+        let amulet_of_health = MagicItem::new_with_effects(
+            "Amulet of Health",
+            MagicItemType::WondrousItem,
+            Rarity::Rare,
+            Attunement::Required,
+            None,
+            vec![MagicItemEffect::Passive(ActiveEffect::IncreaseMaxHP(10))],
+            "Increases max HP.",
+        );
+
+        hero.equip_magic_item(ring_of_protection).unwrap();
+        hero.equip_magic_item(amulet_of_health).unwrap();
+
+        assert_eq!(hero.get_armor_class(), initial_ac + 1);
+        assert_eq!(hero.get_max_hp(), initial_hp + 10);
     }
 }

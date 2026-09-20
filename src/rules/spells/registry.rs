@@ -82,7 +82,8 @@ impl SpellRegistry {
 
     /// Carrega magias Homebrew a partir de uma pasta contendo scripts .hb (Rhai)
     pub fn load_rhai_homebrew_spells(&mut self, dir_path: &str) -> usize {
-        let spells: Vec<Spell> = crate::rules::homebrew_loader::load_homebrew_from_dir(dir_path, "get_spell");
+        let spells: Vec<Spell> =
+            crate::rules::homebrew_loader::load_homebrew_from_dir(dir_path, "get_spell");
         let count = spells.len();
         for spell in spells {
             self.register_spell(spell);

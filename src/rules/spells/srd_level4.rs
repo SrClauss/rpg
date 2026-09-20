@@ -24,7 +24,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
             damage_type: None,
             damage_scaling: None,
             fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
-                effect: ActiveEffect::Utility("Incapacitated and banished to another plane.".to_string()),
+                effect: ActiveEffect::Utility(
+                    "Incapacitated and banished to another plane.".to_string(),
+                ),
                 duration: DurationType::DurationMinutes(1),
             })),
         },
@@ -69,7 +71,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
             damage_type: None,
             damage_scaling: None,
             fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
-                effect: ActiveEffect::Utility("Compelled to move in a designated direction on turn.".to_string()),
+                effect: ActiveEffect::Utility(
+                    "Compelled to move in a designated direction on turn.".to_string(),
+                ),
                 duration: DurationType::DurationMinutes(1),
             })),
         },
@@ -93,7 +97,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
             damage_type: None,
             damage_scaling: None,
             fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
-                effect: ActiveEffect::Utility("Confused: Roll d10 each turn to determine random behavior.".to_string()),
+                effect: ActiveEffect::Utility(
+                    "Confused: Roll d10 each turn to determine random behavior.".to_string(),
+                ),
                 duration: DurationType::DurationMinutes(1),
             })),
         },
@@ -145,7 +151,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
         true,  // Concentration
         false, // Ritual
         SpellEffect::Utility {
-            description: "Manipulate water in a 100-ft cube: Flood, Redirect, Part Water, or Whirlpool.".to_string(),
+            description:
+                "Manipulate water in a 100-ft cube: Flood, Redirect, Part Water, or Whirlpool."
+                    .to_string(),
         },
     ));
 
@@ -311,7 +319,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
         true,  // Concentration
         false, // Ritual
         SpellEffect::ApplyEffect {
-            effect: ActiveEffect::Utility("Invisible (does not break on attack or casting).".to_string()),
+            effect: ActiveEffect::Utility(
+                "Invisible (does not break on attack or casting).".to_string(),
+            ),
             duration: DurationType::DurationMinutes(1),
         },
     ));
@@ -328,7 +338,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
         false, // Concentration
         false, // Ritual
         SpellEffect::Utility {
-            description: "Make natural terrain look, sound, and smell like another type of natural terrain.".to_string(),
+            description:
+                "Make natural terrain look, sound, and smell like another type of natural terrain."
+                    .to_string(),
         },
     ));
 
@@ -365,7 +377,8 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
         true,  // Concentration
         false, // Ritual
         SpellEffect::Utility {
-            description: "Senses the direction to a known or described creature within 1,000 feet.".to_string(),
+            description: "Senses the direction to a known or described creature within 1,000 feet."
+                .to_string(),
         },
     ));
 
@@ -411,7 +424,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
             damage_type: None,
             damage_scaling: None,
             fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
-                effect: ActiveEffect::Utility("Transformed into a beast form with new stat block.".to_string()),
+                effect: ActiveEffect::Utility(
+                    "Transformed into a beast form with new stat block.".to_string(),
+                ),
                 duration: DurationType::DurationHours(1),
             })),
         },
@@ -435,7 +450,9 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
             damage_type: None,
             damage_scaling: None,
             fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
-                effect: ActiveEffect::Utility("Enclosed in an immune sphere blocking all physical/spell attacks.".to_string()),
+                effect: ActiveEffect::Utility(
+                    "Enclosed in an immune sphere blocking all physical/spell attacks.".to_string(),
+                ),
                 duration: DurationType::DurationMinutes(1),
             })),
         },
@@ -453,7 +470,8 @@ pub fn load_level4_spells(reg: &mut SpellRegistry) {
         false, // Concentration
         false, // Ritual
         SpellEffect::Utility {
-            description: "Hide a chest and its contents in the Ethereal Plane, recallable at will.".to_string(),
+            description: "Hide a chest and its contents in the Ethereal Plane, recallable at will."
+                .to_string(),
         },
     ));
 
@@ -542,7 +560,8 @@ mod tests {
     fn test_conjure_minor_elementals_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Conjure Minor Elementals").expect("Conjure Minor Elementals not found");
+        let spell = SpellRegistry::get_spell("Conjure Minor Elementals")
+            .expect("Conjure Minor Elementals not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -550,7 +569,8 @@ mod tests {
     fn test_conjure_woodland_beings_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Conjure Woodland Beings").expect("Conjure Woodland Beings not found");
+        let spell = SpellRegistry::get_spell("Conjure Woodland Beings")
+            .expect("Conjure Woodland Beings not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -600,7 +620,8 @@ mod tests {
     fn test_evards_black_tentacles_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Evard's Black Tentacles").expect("Evard's Black Tentacles not found");
+        let spell = SpellRegistry::get_spell("Evard's Black Tentacles")
+            .expect("Evard's Black Tentacles not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -632,7 +653,8 @@ mod tests {
     fn test_greater_invisibility_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Greater Invisibility").expect("Greater Invisibility not found");
+        let spell = SpellRegistry::get_spell("Greater Invisibility")
+            .expect("Greater Invisibility not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -640,7 +662,8 @@ mod tests {
     fn test_hallucinatory_terrain_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Hallucinatory Terrain").expect("Hallucinatory Terrain not found");
+        let spell = SpellRegistry::get_spell("Hallucinatory Terrain")
+            .expect("Hallucinatory Terrain not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -665,7 +688,8 @@ mod tests {
     fn test_phantasmal_killer_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Phantasmal Killer").expect("Phantasmal Killer not found");
+        let spell =
+            SpellRegistry::get_spell("Phantasmal Killer").expect("Phantasmal Killer not found");
         assert_eq!(spell.level, 4);
     }
 
@@ -682,7 +706,8 @@ mod tests {
     fn test_resilient_sphere_spell() {
         let mut reg = SpellRegistry::new();
         load_level4_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Resilient Sphere").expect("Resilient Sphere not found");
+        let spell =
+            SpellRegistry::get_spell("Resilient Sphere").expect("Resilient Sphere not found");
         assert_eq!(spell.level, 4);
     }
 

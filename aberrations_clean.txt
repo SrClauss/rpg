@@ -1,0 +1,22 @@
+============================== Aboleth ==============================
+Aboleth Large aberration, lawful evil Armor Class 17 (natural armor) Hit Points 135 (18d10 + 36) Speed 10 ft., swim 40 ft. STR DEX CON INT WIS CHA 21 (+5) 9 (−1) 15 (+2) 18 (+4) 15 (+2) 18 (+4) Saving Throws Con +6, Int +8, Wis +6 Skills History +12, Perception +10 Senses darkvision 120 ft., passive Perception 20 Enslave (3/Day). The aboleth targets one creature it can see within 30 feet of it. The target must succeed on a DC 14 Wisdom saving throw or be magically charmed by the aboleth until the aboleth dies or until it is on a different plane of existence from the target. The charmed target is under the aboleth’s control and can’t
+
+
+============================== Cloaker ==============================
+Cloaker Large aberration, chaotic neutral Armor Class 14 (natural armor) Hit Points 78 (12d10 + 12) Speed 10 ft., fly 40 ft. STR DEX CON INT WIS CHA 17 (+3) 15 (+2) 12 (+1) 13 (+1) 12 (+1) 14 (+2) Skills Stealth +5 Senses darkvision 60 ft., passive Perception 11 Languages Deep Speech, Undercommon Challenge 8 (3,900 XP) Damage Transfer. While attached to a creature, the cloaker takes only half the damage dealt to it (rounded down), and that creature takes the other half. False Appearance. While the cloaker remains motionless without its underside exposed, it is indistinguishable from a dark leather cloak. Light Sensitivity. While in bright light, the cloaker has disadvantage on attack rolls and Wisdom (Perception) checks
+
+
+============================== Gibbering Mouther ==============================
+
+
+============================== Otyugh ==============================
+Otyugh Split. When a jelly that is Medium or larger is subjected to lightning or slashing damage, it splits into two new jellies if it has at least 10 hit points. Each new jelly has hit points equal to half the original jelly’s, rounded down. New jellies are one size smaller than the original jelly. CON INT WIS CHA 16 (+3) 11 (+0) 19 (+4) 6 (−2) 13 (+1) 6 (−2) Senses darkvision 120 ft., passive Perception 11 Challenge 5 (1,800 XP) Limited Telepathy. The otyugh can magically transmit simple messages and images to any creature within 120 feet of it that can understand a language. This form of telepathy doesn’t allow the receiving creature to telepathically respond. Actions Multiattack.
+
+
+============================== Roper ==============================
+Roper Large monstrosity, neutral evil Armor Class 20 (natural armor) Hit Points 93 (11d10 + 33) Speed 10 ft., climb 10 ft. STR DEX CON INT WIS CHA 18 (+4) 8 (−1) 17 (+3) 7 (−2) 16 (+3) 6 (−2) Skills Perception +6, Stealth +5 Senses darkvision 60 ft., passive Perception 16 Languages — Challenge 5 (1,800 XP) False Appearance. While the roper remains motionless, it is indistinguishable from a normal cave formation, such as a stalagmite. Grasping Tendrils. The roper can have up to six tendrils at a time. Each tendril can be attacked (AC 20; 10 hit points; immunity to poison and psychic damage). Destroying a tendril deals no damage to the roper, which can extrude a replacement
+
+
+============================== Will-o'-Wisp ==============================
+
+

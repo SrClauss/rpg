@@ -31,7 +31,10 @@ pub fn load_level8_spells(reg: &mut SpellRegistry) {
         "1 hour",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a 10-foot-radius sphere where magic does not function.".to_string() },
+        SpellEffect::Utility {
+            description: "Create a 10-foot-radius sphere where magic does not function."
+                .to_string(),
+        },
     ));
 
     // 3. Antipathy Sympathy
@@ -73,7 +76,10 @@ pub fn load_level8_spells(reg: &mut SpellRegistry) {
         "8 hours",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Take control of the weather within 5 miles of you for the duration.".to_string() },
+        SpellEffect::Utility {
+            description: "Take control of the weather within 5 miles of you for the duration."
+                .to_string(),
+        },
     ));
 
     // 6. Earthquake
@@ -129,7 +135,14 @@ pub fn load_level8_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("10d8".to_string()), damage_type: Some(DamageType::Fire), damage_scaling: None, fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("10d8".to_string()),
+            damage_type: Some(DamageType::Fire),
+            damage_scaling: None,
+            fail_effect: None,
+        },
     ));
 
     // 10. Maze
@@ -183,9 +196,19 @@ pub fn load_level8_spells(reg: &mut SpellRegistry) {
         150,
         Components::vsm("Fire and a piece of sunstone"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("12d6".to_string()), damage_type: Some(DamageType::Radiant), damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::ApplyEffect { effect: ActiveEffect::Utility("Blinded for 1 minute.".to_string()), duration: DurationType::DurationMinutes(1) })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("12d6".to_string()),
+            damage_type: Some(DamageType::Radiant),
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
+                effect: ActiveEffect::Utility("Blinded for 1 minute.".to_string()),
+                duration: DurationType::DurationMinutes(1),
+            })),
+        },
     ));
 
     // 14. Tsunami
@@ -201,7 +224,6 @@ pub fn load_level8_spells(reg: &mut SpellRegistry) {
         false, // Ritual
         SpellEffect::Utility { description: "Create a wall of water that moves and crashes into creatures, dealing massive bludgeoning damage and pushing them.".to_string() },
     ));
-
 }
 
 #[cfg(test)]
@@ -226,7 +248,8 @@ mod tests {
     fn test_antipathy_sympathy_spell() {
         let mut reg = SpellRegistry::new();
         load_level8_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Antipathy Sympathy").expect("Antipathy Sympathy not found");
+        let spell =
+            SpellRegistry::get_spell("Antipathy Sympathy").expect("Antipathy Sympathy not found");
         assert_eq!(spell.level, 8);
     }
     #[test]
@@ -268,7 +291,8 @@ mod tests {
     fn test_incendiary_cloud_spell() {
         let mut reg = SpellRegistry::new();
         load_level8_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Incendiary Cloud").expect("Incendiary Cloud not found");
+        let spell =
+            SpellRegistry::get_spell("Incendiary Cloud").expect("Incendiary Cloud not found");
         assert_eq!(spell.level, 8);
     }
     #[test]

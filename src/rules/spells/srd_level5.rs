@@ -17,7 +17,9 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Animate up to 10 nonmagical objects.".to_string() },
+        SpellEffect::Utility {
+            description: "Animate up to 10 nonmagical objects.".to_string(),
+        },
     ));
 
     // 2. Antilife Shell
@@ -43,9 +45,11 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vsm("An agate worth at least 1,000 gp, which the spell consumes"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Awaken a huge or smaller beast or plant to sentience.".to_string() },
+        SpellEffect::Utility {
+            description: "Awaken a huge or smaller beast or plant to sentience.".to_string(),
+        },
     ));
 
     // 4. Cloudkill
@@ -59,7 +63,14 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("5d8".to_string()), damage_type: Some(DamageType::Poison), damage_scaling: Some("1d8".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("5d8".to_string()),
+            damage_type: Some(DamageType::Poison),
+            damage_scaling: Some("1d8".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 5. Commune
@@ -71,9 +82,11 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vsm("Incense and a vial of holy or unholy water"),
         "1 minute",
-        false,  // Concentration
-        true, // Ritual
-        SpellEffect::Utility { description: "Contact your deity and ask up to three questions.".to_string() },
+        false, // Concentration
+        true,  // Ritual
+        SpellEffect::Utility {
+            description: "Contact your deity and ask up to three questions.".to_string(),
+        },
     ));
 
     // 6. Commune with Nature
@@ -85,9 +98,11 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
-        true, // Ritual
-        SpellEffect::Utility { description: "Gain knowledge of the surrounding territory.".to_string() },
+        false, // Concentration
+        true,  // Ritual
+        SpellEffect::Utility {
+            description: "Gain knowledge of the surrounding territory.".to_string(),
+        },
     ));
 
     // 7. Cone of Cold
@@ -99,9 +114,16 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vsm("A small crystal or glass cone"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("8d8".to_string()), damage_type: Some(DamageType::Cold), damage_scaling: Some("1d8".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("8d8".to_string()),
+            damage_type: Some(DamageType::Cold),
+            damage_scaling: Some("1d8".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 8. Conjure Elemental
@@ -141,9 +163,18 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vs(),
         "7 days",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SpellAttack { damage_dice: "".to_string(), damage_type: DamageType::Poison, damage_scaling: None, on_hit_effect: Some(Box::new(SpellEffect::Utility { description: "Target is poisoned and must make Constitution saves to avoid a disease.".to_string() })) },
+        SpellEffect::SpellAttack {
+            damage_dice: "".to_string(),
+            damage_type: DamageType::Poison,
+            damage_scaling: None,
+            on_hit_effect: Some(Box::new(SpellEffect::Utility {
+                description:
+                    "Target is poisoned and must make Constitution saves to avoid a disease."
+                        .to_string(),
+            })),
+        },
     ));
 
     // 11. Creation
@@ -155,9 +186,13 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         30,
         Components::vsm("A tiny piece of matter of the same type of the item you plan to create"),
         "Special",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Pull wisps of shadow material from the Shadowfell to create a nonliving object.".to_string() },
+        SpellEffect::Utility {
+            description:
+                "Pull wisps of shadow material from the Shadowfell to create a nonliving object."
+                    .to_string(),
+        },
     ));
 
     // 12. Dispel Evil and Good
@@ -185,7 +220,17 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Wisdom, half_damage_on_save: false, damage_dice: None, damage_type: None, damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::ApplyEffect { effect: ActiveEffect::Utility("Charmed and telepathically controlled.".to_string()), duration: DurationType::DurationMinutes(1) })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Wisdom,
+            half_damage_on_save: false,
+            damage_dice: None,
+            damage_type: None,
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
+                effect: ActiveEffect::Utility("Charmed and telepathically controlled.".to_string()),
+                duration: DurationType::DurationMinutes(1),
+            })),
+        },
     ));
 
     // 14. Dream
@@ -211,9 +256,16 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         60,
         Components::vsm("Pinch of sulfur"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("4d6+4d6".to_string()), damage_type: Some(DamageType::Fire), damage_scaling: Some("1d6".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("4d6+4d6".to_string()),
+            damage_type: Some(DamageType::Fire),
+            damage_scaling: Some("1d6".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 16. Geas
@@ -269,7 +321,17 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Wisdom, half_damage_on_save: false, damage_dice: None, damage_type: None, damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::ApplyEffect { effect: ActiveEffect::Utility("Paralyzed.".to_string()), duration: DurationType::DurationMinutes(1) })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Wisdom,
+            half_damage_on_save: false,
+            damage_dice: None,
+            damage_type: None,
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::ApplyEffect {
+                effect: ActiveEffect::Utility("Paralyzed.".to_string()),
+                duration: DurationType::DurationMinutes(1),
+            })),
+        },
     ));
 
     // 20. Insect Plague
@@ -283,7 +345,14 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("4d10".to_string()), damage_type: Some(DamageType::Piercing), damage_scaling: Some("1d10".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("4d10".to_string()),
+            damage_type: Some(DamageType::Piercing),
+            damage_scaling: Some("1d10".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 21. Legend Lore
@@ -309,9 +378,12 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::MultiTargetHealing { max_targets: 6, healing_dice: "3d8".to_string() },
+        SpellEffect::MultiTargetHealing {
+            max_targets: 6,
+            healing_dice: "3d8".to_string(),
+        },
     ));
 
     // 23. Mislead
@@ -351,9 +423,11 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         30,
         Components::vsm("A pinch of sesame seeds"),
         "1 hour",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "A passage appears in a wooden, plaster, or stone surface.".to_string() },
+        SpellEffect::Utility {
+            description: "A passage appears in a wooden, plaster, or stone surface.".to_string(),
+        },
     ));
 
     // 26. Planar Binding
@@ -365,9 +439,19 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         60,
         Components::vsm("A jewel worth at least 1,000 gp, which the spell consumes"),
         "24 hours",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Charisma, half_damage_on_save: false, damage_dice: None, damage_type: None, damage_scaling: None, fail_effect: Some(Box::new(SpellEffect::Utility { description: "Bind a celestial, elemental, fey, or fiend to your service.".to_string() })) },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Charisma,
+            half_damage_on_save: false,
+            damage_dice: None,
+            damage_type: None,
+            damage_scaling: None,
+            fail_effect: Some(Box::new(SpellEffect::Utility {
+                description: "Bind a celestial, elemental, fey, or fiend to your service."
+                    .to_string(),
+            })),
+        },
     ));
 
     // 27. Raise Dead
@@ -393,9 +477,13 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         0,
         Components::vsm("Rare oils and unguents worth at least 1,000 gp, which the spell consumes"),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a new adult body for a dead humanoid and cause its soul to enter that body.".to_string() },
+        SpellEffect::Utility {
+            description:
+                "Create a new adult body for a dead humanoid and cause its soul to enter that body."
+                    .to_string(),
+        },
     ));
 
     // 29. Scrying
@@ -421,9 +509,12 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         30,
         Components::vs(),
         "8 hours",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Change the appearance of any number of creatures you can see.".to_string() },
+        SpellEffect::Utility {
+            description: "Change the appearance of any number of creatures you can see."
+                .to_string(),
+        },
     ));
 
     // 31. Telekinesis
@@ -437,7 +528,9 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Move objects or creatures with your mind.".to_string() },
+        SpellEffect::Utility {
+            description: "Move objects or creatures with your mind.".to_string(),
+        },
     ));
 
     // 32. Teleportation Circle
@@ -447,11 +540,16 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         SpellSchool::Conjuration,
         "1 minute",
         10,
-        Components::vsm("Rare chalks and inks infused with precious gems with 50 gp, which the spell consumes"),
+        Components::vsm(
+            "Rare chalks and inks infused with precious gems with 50 gp, which the spell consumes",
+        ),
         "1 round",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a circular portal linked to a permanent teleportation circle.".to_string() },
+        SpellEffect::Utility {
+            description: "Create a circular portal linked to a permanent teleportation circle."
+                .to_string(),
+        },
     ));
 
     // 33. Tree Stride
@@ -465,7 +563,9 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Step into one living tree and emerge from another.".to_string() },
+        SpellEffect::Utility {
+            description: "Step into one living tree and emerge from another.".to_string(),
+        },
     ));
 
     // 34. Wall of Force
@@ -479,7 +579,9 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "An invisible wall of force springs into existence.".to_string() },
+        SpellEffect::Utility {
+            description: "An invisible wall of force springs into existence.".to_string(),
+        },
     ));
 
     // 35. Wall of Stone
@@ -493,9 +595,10 @@ pub fn load_level5_spells(reg: &mut SpellRegistry) {
         "10 minutes",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "A nonmagical wall of solid stone springs into existence.".to_string() },
+        SpellEffect::Utility {
+            description: "A nonmagical wall of solid stone springs into existence.".to_string(),
+        },
     ));
-
 }
 
 #[cfg(test)]
@@ -541,7 +644,8 @@ mod tests {
     fn test_commune_with_nature_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Commune with Nature").expect("Commune with Nature not found");
+        let spell =
+            SpellRegistry::get_spell("Commune with Nature").expect("Commune with Nature not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
@@ -555,14 +659,16 @@ mod tests {
     fn test_conjure_elemental_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Conjure Elemental").expect("Conjure Elemental not found");
+        let spell =
+            SpellRegistry::get_spell("Conjure Elemental").expect("Conjure Elemental not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
     fn test_contact_other_plane_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Contact Other Plane").expect("Contact Other Plane not found");
+        let spell =
+            SpellRegistry::get_spell("Contact Other Plane").expect("Contact Other Plane not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
@@ -583,7 +689,8 @@ mod tests {
     fn test_dispel_evil_and_good_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Dispel Evil and Good").expect("Dispel Evil and Good not found");
+        let spell = SpellRegistry::get_spell("Dispel Evil and Good")
+            .expect("Dispel Evil and Good not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
@@ -618,7 +725,8 @@ mod tests {
     fn test_greater_restoration_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Greater Restoration").expect("Greater Restoration not found");
+        let spell =
+            SpellRegistry::get_spell("Greater Restoration").expect("Greater Restoration not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
@@ -653,7 +761,8 @@ mod tests {
     fn test_mass_cure_wounds_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Mass Cure Wounds").expect("Mass Cure Wounds not found");
+        let spell =
+            SpellRegistry::get_spell("Mass Cure Wounds").expect("Mass Cure Wounds not found");
         assert_eq!(spell.level, 5);
     }
     #[test]
@@ -723,7 +832,8 @@ mod tests {
     fn test_teleportation_circle_spell() {
         let mut reg = SpellRegistry::new();
         load_level5_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Teleportation Circle").expect("Teleportation Circle not found");
+        let spell = SpellRegistry::get_spell("Teleportation Circle")
+            .expect("Teleportation Circle not found");
         assert_eq!(spell.level, 5);
     }
     #[test]

@@ -13,11 +13,15 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         SpellSchool::Evocation,
         "1 action",
         60,
-        Components::vsm("A miniature platinum sword with a grip and pommel of copper and zinc, worth 250 gp"),
+        Components::vsm(
+            "A miniature platinum sword with a grip and pommel of copper and zinc, worth 250 gp",
+        ),
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Create a sword of pure force that can attack enemies.".to_string() },
+        SpellEffect::Utility {
+            description: "Create a sword of pure force that can attack enemies.".to_string(),
+        },
     ));
 
     // 2. Delayed Blast Fireball
@@ -31,7 +35,14 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         "1 minute",
         true,  // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("12d6".to_string()), damage_type: Some(DamageType::Fire), damage_scaling: Some("1d6".to_string()), fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("12d6".to_string()),
+            damage_type: Some(DamageType::Fire),
+            damage_scaling: Some("1d6".to_string()),
+            fail_effect: None,
+        },
     ));
 
     // 3. Divine Word
@@ -57,9 +68,12 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         0,
         Components::vs(),
         "8 hours",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Step into the Ethereal Plane, moving through objects and creatures.".to_string() },
+        SpellEffect::Utility {
+            description: "Step into the Ethereal Plane, moving through objects and creatures."
+                .to_string(),
+        },
     ));
 
     // 5. Finger of Death
@@ -71,9 +85,16 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         60,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Constitution, half_damage_on_save: true, damage_dice: Some("7d8+30".to_string()), damage_type: Some(DamageType::Necrotic), damage_scaling: None, fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Constitution,
+            half_damage_on_save: true,
+            damage_dice: Some("7d8+30".to_string()),
+            damage_type: Some(DamageType::Necrotic),
+            damage_scaling: None,
+            fail_effect: None,
+        },
     ));
 
     // 6. Fire Storm
@@ -85,9 +106,16 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         150,
         Components::vs(),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::SaveThrow { save_ability: Ability::Dexterity, half_damage_on_save: true, damage_dice: Some("7d10".to_string()), damage_type: Some(DamageType::Fire), damage_scaling: None, fail_effect: None },
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
+            damage_dice: Some("7d10".to_string()),
+            damage_type: Some(DamageType::Fire),
+            damage_scaling: None,
+            fail_effect: None,
+        },
     ));
 
     // 7. Forcecage
@@ -125,11 +153,16 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         SpellSchool::Conjuration,
         "1 action",
         0,
-        Components::vsm("A forked, metal rod worth at least 250 gp, attuned to a particular plane of existence"),
+        Components::vsm(
+            "A forked, metal rod worth at least 250 gp, attuned to a particular plane of existence",
+        ),
         "Instantaneous",
-        false,  // Concentration
+        false, // Concentration
         false, // Ritual
-        SpellEffect::Utility { description: "Transport yourself or a creature to another plane of existence.".to_string() },
+        SpellEffect::Utility {
+            description: "Transport yourself or a creature to another plane of existence."
+                .to_string(),
+        },
     ));
 
     // 10. Prismatic Spray
@@ -229,7 +262,6 @@ pub fn load_level7_spells(reg: &mut SpellRegistry) {
         false, // Ritual
         SpellEffect::Utility { description: "Instantly transport yourself and up to eight willing creatures to a destination you select.".to_string() },
     ));
-
 }
 
 #[cfg(test)]
@@ -247,7 +279,8 @@ mod tests {
     fn test_delayed_blast_fireball_spell() {
         let mut reg = SpellRegistry::new();
         load_level7_spells(&mut reg);
-        let spell = SpellRegistry::get_spell("Delayed Blast Fireball").expect("Delayed Blast Fireball not found");
+        let spell = SpellRegistry::get_spell("Delayed Blast Fireball")
+            .expect("Delayed Blast Fireball not found");
         assert_eq!(spell.level, 7);
     }
     #[test]

@@ -1,346 +1,295 @@
-# Plano de Implementação: Registro de Magias SRD e Suporte a Magias Homebrew (JSON)
+# Plano de Implementação - Sistema de Monstros & Criaturas (SRD 5.1)
 
-## Objetivo
-Implementar a infraestrutura do Registro Global de Magias (`SpellRegistry`) com suporte ao carregamento dinâmico de magias Homebrew (JSON) e inserir incrementalmente todas as magias do SRD 5.1 (páginas 105 a 207).
-Para **cada magia individualmente**, iremos analisar se as ferramentas e mecânicas atuais suportam seus efeitos ou se novos recursos precisarão ser criados.
-
-## Expansão Arquitetural: Sistema de Efeitos Ativos (Buffs e Debuffs)
-Para suportar de forma puramente matemática e determinística as centenas de magias do SRD que modificam o estado de combate (ex: dar vantagem, somar bônus a CA, impedir curas, adicionar resistências), será implementado o sistema de **Efeitos Ativos** (`ActiveEffect`).
-- O `SpellEffect` ganhará uma nova variante: `ApplyEffect { effect: ActiveEffect, duration: DurationType }`.
-- O struct `Entity` terá uma lista `active_effects: Vec<ActiveEffect>`.
-- Funções chave do motor (`resolve_attack`, `roll_saving_throw`, `roll_ability_check`, curas e movimentação) interceptarão essa lista antes da resolução para aplicar modificadores matemáticos reais ao jogo, evitando dependência de interpretação textual por LLMs.
-
-## Expansão Arquitetural: Efeitos Compostos e Escalonamento
-Durante a análise dos Truques, identificamos duas novas necessidades mecânicas determinísticas que serão adicionadas antes da implementação final:
-- **Efeito Composto (`Compound`)**: Uma variante `SpellEffect::Compound(Vec<SpellEffect>)` será criada para processar magias que aplicam múltiplos efeitos em um turno (ex: Magia *Light* - Aplica Iluminação utilitária e pede SaveThrow do oponente).
-- **Escalonamento de Dano (Scaling)**: Truques como *Fire Bolt* e *Poison Spray* escalam o número de dados no 5º, 11º e 17º níveis. Precisaremos injetar um parâmetro de escala no `SpellEffect` ou calcular isso dinamicamente na função `cast_spell`.
+Este documento estabelece o plano detalhado de implementação e a checklist completa de mecanização para todos os monstros, criaturas e NPCs do **SRD 5.1 (Páginas 254 a 359)** na RPG Engine em Rust.
 
 ---
 
-## Checklist de Subproblemas
+## 🏗️ 1. Infraestrutura Base & Suporte a Monstros
 
-- [x] **Infraestrutura Base de Efeitos Ativos (Buffs/Debuffs)**
-  - [x] Criar struct e enum `ActiveEffect` e incorporá-lo na entidade base do motor de regras.
-  - [x] Interceptar os efeitos nas rolagens principais (Dano, Salvaguardas, Vantagens, CA).
+- [x] **Mecânicas Globais de Monstros**
+  - [x] Estrutura `MonsterStatBlock` / `Monster` & Enums `CreatureType` e `CreatureSize`
+  - [x] Mapeamento de Dados de Vida por Tamanho (`Tiny d4` até `Gargantuan d20`)
+  - [x] Sistema de Resistências, Imunidades e Vulnerabilidades a Danos e Condições
+  - [x] Sistema de Sentidos Especiais (`Blindsight`, `Darkvision`, `Tremorsense`, `Truesight`)
+  - [x] Suporte a Conjuração Inata (`Innate Spellcasting`) e Psionismo (`Psionics`)
+  - [x] Mecânica de Recarga em Combate (`Recharge X-Y` via rola d6 no início do turno)
+  - [x] Suporte a Ações Lendárias (`Legendary Actions`), Ações de Guarida (`Lair Actions`) e Efeitos Regionais
 
-- [x] **Infraestrutura Base (SpellRegistry & JSON Loader)**
-  - [x] Criar `src/rules/spells/registry.rs` contendo a struct `SpellRegistry` e `GLOBAL_SPELLS` (`LazyLock`).
-  - [x] Implementar o método `load_homebrew_spells(&mut self, json_str: &str) -> Result<usize, String>`.
-  - [x] Exportar o submódulo em `src/rules/spells/mod.rs`.
+---
 
-- [ ] **Truques (Nível 0)**
-  - [x] Analisar, verificar efeitos e implementar: Acid Splash
-  - [x] Analisar, verificar efeitos e implementar: Blade Ward
-  - [x] Analisar, verificar efeitos e implementar: Chill Touch
-  - [x] Analisar, verificar efeitos e implementar: Dancing Lights
-  - [x] Analisar, verificar efeitos e implementar: Druidcraft
-  - [x] Analisar, verificar efeitos e implementar: Eldritch Blast
-  - [x] Analisar, verificar efeitos e implementar: Fire Bolt
-  - [x] Analisar, verificar efeitos e implementar: Guidance
-  - [x] Analisar, verificar efeitos e implementar: Light
-  - [x] Analisar, verificar efeitos e implementar: Mage Hand
-  - [x] Analisar, verificar efeitos e implementar: Mending
-  - [x] Analisar, verificar efeitos e implementar: Message
-  - [x] Analisar, verificar efeitos e implementar: Minor Illusion
-  - [x] Analisar, verificar efeitos e implementar: Poison Spray
-  - [x] Analisar, verificar efeitos e implementar: Prestidigitation
-  - [x] Analisar, verificar efeitos e implementar: Produce Flame
-  - [x] Analisar, verificar efeitos e implementar: Ray of Frost
-  - [x] Analisar, verificar efeitos e implementar: Resistance
-  - [x] Analisar, verificar efeitos e implementar: Sacred Flame
-  - [x] Analisar, verificar efeitos e implementar: Shillelagh
-  - [x] Analisar, verificar efeitos e implementar: Shocking Grasp
-  - [x] Analisar, verificar efeitos e implementar: Spare the Dying
-  - [x] Analisar, verificar efeitos e implementar: Thaumaturgy
-  - [x] Analisar, verificar efeitos e implementar: True Strike
-  - [x] Analisar, verificar efeitos e implementar: Vicious Mockery
+## 👹 2. Checklist por Categoria de Criaturas
 
-- [ ] **1º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Alarm
-  - [x] Analisar, verificar efeitos e implementar: Armor of Agathys
-  - [x] Analisar, verificar efeitos e implementar: Arms of Hadar
-  - [x] Analisar, verificar efeitos e implementar: Bane
-  - [x] Analisar, verificar efeitos e implementar: Bless
-  - [x] Analisar, verificar efeitos e implementar: Burning Hands
-  - [x] Analisar, verificar efeitos e implementar: Charm Person
-  - [x] Analisar, verificar efeitos e implementar: Command
-  - [x] Analisar, verificar efeitos e implementar: Comprehend Languages
-  - [x] Analisar, verificar efeitos e implementar: Create or Destroy Water
-  - [x] Analisar, verificar efeitos e implementar: Cure Wounds
-  - [x] Analisar, verificar efeitos e implementar: Detect Evil and Good
-  - [x] Analisar, verificar efeitos e implementar: Detect Magic
-  - [x] Analisar, verificar efeitos e implementar: Detect Poison and Disease
-  - [x] Analisar, verificar efeitos e implementar: Disguise Self
-  - [x] Analisar, verificar efeitos e implementar: Divine Favor
-  - [x] Analisar, verificar efeitos e implementar: Entangle
-  - [x] Analisar, verificar efeitos e implementar: Expeditious Retreat
-  - [x] Analisar, verificar efeitos e implementar: Faerie Fire
-  - [x] Analisar, verificar efeitos e implementar: Feather Fall
-  - [x] Analisar, verificar efeitos e implementar: Find Familiar
-  - [x] Analisar, verificar efeitos e implementar: Fog Cloud
-  - [x] Analisar, verificar efeitos e implementar: Goodberry
-  - [x] Analisar, verificar efeitos e implementar: Grease
-  - [x] Analisar, verificar efeitos e implementar: Guiding Bolt
-  - [x] Analisar, verificar efeitos e implementar: Healing Word
-  - [x] Analisar, verificar efeitos e implementar: Hellish Rebuke
-  - [x] Analisar, verificar efeitos e implementar: Heroism
-  - [x] Analisar, verificar efeitos e implementar: Hideous Laughter
-  - [x] Analisar, verificar efeitos e implementar: Hunter's Mark
-  - [x] Analisar, verificar efeitos e implementar: Identify
-  - [x] Analisar, verificar efeitos e implementar: Illusory Script
-  - [x] Analisar, verificar efeitos e implementar: Inflict Wounds
-  - [x] Analisar, verificar efeitos e implementar: Jump
-  - [x] Analisar, verificar efeitos e implementar: Longstrider
-  - [x] Analisar, verificar efeitos e implementar: Mage Armor
-  - [x] Analisar, verificar efeitos e implementar: Magic Missile
-  - [x] Analisar, verificar efeitos e implementar: Protection from Evil and Good
-  - [x] Analisar, verificar efeitos e implementar: Purify Food and Drink
-  - [x] Analisar, verificar efeitos e implementar: Sanctuary
-  - [x] Analisar, verificar efeitos e implementar: Shield
-  - [x] Analisar, verificar efeitos e implementar: Shield of Faith
-  - [x] Analisar, verificar efeitos e implementar: Silent Image
-  - [x] Analisar, verificar efeitos e implementar: Sleep
-  - [x] Analisar, verificar efeitos e implementar: Speak with Animals
-  - [x] Analisar, verificar efeitos e implementar: Thunderwave
-  - [x] Analisar, verificar efeitos e implementar: Unseen Servant
-  - [x] Analisar, verificar efeitos e implementar: Witch Bolt
+### 👁️ Aberrações (Aberrations)
+- [x] Aboleth
+- [x] Cloaker
+- [x] Gibbering Mouther
+- [x] Otyugh
+- [x] Roper
+- [x] Will-o'-Wisp
 
-- [ ] **2º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Aid
-  - [x] Analisar, verificar efeitos e implementar: Alter Self
-  - [x] Analisar, verificar efeitos e implementar: Animal Messenger
-  - [x] Analisar, verificar efeitos e implementar: Arcane Lock
-  - [x] Analisar, verificar efeitos e implementar: Augury
-  - [x] Analisar, verificar efeitos e implementar: Barkskin
-  - [x] Analisar, verificar efeitos e implementar: Blindness/Deafness
-  - [x] Analisar, verificar efeitos e implementar: Blur
-  - [x] Analisar, verificar efeitos e implementar: Branding Smite
-  - [x] Analisar, verificar efeitos e implementar: Calm Emotions
-  - [x] Analisar, verificar efeitos e implementar: Darkness
-  - [x] Analisar, verificar efeitos e implementar: Darkvision
-  - [x] Analisar, verificar efeitos e implementar: Detect Thoughts
-  - [x] Analisar, verificar efeitos e implementar: Enhance Ability
-  - [x] Analisar, verificar efeitos e implementar: Enlarge/Reduce
-  - [x] Analisar, verificar efeitos e implementar: Enthrall
-  - [x] Analisar, verificar efeitos e implementar: Find Steed
-  - [x] Analisar, verificar efeitos e implementar: Find Traps
-  - [x] Analisar, verificar efeitos e implementar: Flame Blade
-  - [x] Analisar, verificar efeitos e implementar: Flaming Sphere
-  - [x] Analisar, verificar efeitos e implementar: Gentle Repose
-  - [x] Analisar, verificar efeitos e implementar: Gust of Wind
-  - [x] Analisar, verificar efeitos e implementar: Hold Person
-  - [x] Analisar, verificar efeitos e implementar: Invisibility
-  - [x] Analisar, verificar efeitos e implementar: Knock
-  - [x] Analisar, verificar efeitos e implementar: Lesser Restoration
-  - [x] Analisar, verificar efeitos e implementar: Levitate
-  - [x] Analisar, verificar efeitos e implementar: Locate Animals or Plants
-  - [x] Analisar, verificar efeitos e implementar: Locate Object
-  - [x] Analisar, verificar efeitos e implementar: Magic Mouth
-  - [x] Analisar, verificar efeitos e implementar: Magic Weapon
-  - [x] Analisar, verificar efeitos e implementar: Melf's Acid Arrow
-  - [x] Analisar, verificar efeitos e implementar: Mirror Image
-  - [x] Analisar, verificar efeitos e implementar: Misty Step
-  - [x] Analisar, verificar efeitos e implementar: Moonbeam
-  - [x] Analisar, verificar efeitos e implementar: Pass Without Trace
-  - [x] Analisar, verificar efeitos e implementar: Prayer of Healing
-  - [x] Analisar, verificar efeitos e implementar: Protection from Poison
-  - [x] Analisar, verificar efeitos e implementar: Ray of Enfeeblement
-  - [x] Analisar, verificar efeitos e implementar: Rope Trick
-  - [x] Analisar, verificar efeitos e implementar: Scorching Ray
-  - [x] Analisar, verificar efeitos e implementar: See Invisibility
-  - [x] Analisar, verificar efeitos e implementar: Shatter
-  - [x] Analisar, verificar efeitos e implementar: Silence
-  - [x] Analisar, verificar efeitos e implementar: Spider Climb
-  - [x] Analisar, verificar efeitos e implementar: Spike Growth
-  - [x] Analisar, verificar efeitos e implementar: Spiritual Weapon
-  - [x] Analisar, verificar efeitos e implementar: Suggestion
-  - [x] Analisar, verificar efeitos e implementar: Warding Bond
-  - [x] Analisar, verificar efeitos e implementar: Web
-  - [x] Analisar, verificar efeitos e implementar: Zone of Truth
+### 🐻 Bestas & Animais (Beasts)
+- [x] Ape
+- [x] Baboon
+- [x] Badger
+- [x] Black Bear
+- [x] Boar
+- [x] Brown Bear
+- [x] Constrictor Snake
+- [x] Crocodile
+- [x] Dire Wolf
+- [x] Draft Horse
+- [x] Eagle
+- [x] Elephant
+- [x] Giant Ape
+- [x] Giant Badger
+- [x] Giant Bat
+- [x] Giant Boar
+- [x] Giant Centipede
+- [x] Giant Constrictor Snake
+- [x] Giant Crab
+- [x] Giant Crocodile
+- [x] Giant Eagle
+- [x] Giant Elk
+- [x] Giant Fire Beetle
+- [x] Giant Frog
+- [x] Giant Goat
+- [x] Giant Hyena
+- [x] Giant Lizard
+- [x] Giant Octopus
+- [x] Giant Owl
+- [x] Giant Poisonous Snake
+- [x] Giant Rat
+- [x] Giant Raven
+- [x] Giant Scorpion
+- [x] Giant Shark
+- [x] Giant Spider
+- [x] Giant Toad
+- [x] Giant Vulture
+- [x] Giant Wasp
+- [x] Giant Weasel
+- [x] Giant Wolf Spider
+- [x] Goat
+- [x] Hawk
+- [x] Hunter Shark
+- [x] Hyena
+- [x] Jackal
+- [x] Killer Whale
+- [x] Lion
+- [x] Lizard
+- [x] Mule
+- [x] Octopus
+- [x] Owl
+- [x] Panther
+- [x] Phase Spider
+- [x] Plesiosaurus
+- [x] Poisonous Snake
+- [x] Pony
+- [x] Reef Shark
+- [x] Rhinoceros
+- [x] Riding Horse
+- [x] Saber-Toothed Tiger
+- [x] Scorpion
+- [x] Sea Horse
+- [x] Spider
+- [x] Tiger
+- [x] Tyrannosaurus Rex
+- [x] Vulture
+- [x] Warhorse
+- [x] Weasel
+- [x] Wolf
 
-- [ ] **3º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Animate Dead
-  - [x] Analisar, verificar efeitos e implementar: Beacon of Hope
-  - [x] Analisar, verificar efeitos e implementar: Bestow Curse
-  - [x] Analisar, verificar efeitos e implementar: Blink
-  - [x] Analisar, verificar efeitos e implementar: Call Lightning
-  - [x] Analisar, verificar efeitos e implementar: Clairvoyance
-  - [x] Analisar, verificar efeitos e implementar: Conjure Animals
-  - [x] Analisar, verificar efeitos e implementar: Counterspell
-  - [x] Analisar, verificar efeitos e implementar: Create Food and Water
-  - [x] Analisar, verificar efeitos e implementar: Daylight
-  - [x] Analisar, verificar efeitos e implementar: Dispel Magic
-  - [x] Analisar, verificar efeitos e implementar: Fear
-  - [x] Analisar, verificar efeitos e implementar: Feign Death
-  - [x] Analisar, verificar efeitos e implementar: Fireball
-  - [x] Analisar, verificar efeitos e implementar: Fly
-  - [x] Analisar, verificar efeitos e implementar: Gaseous Form
-  - [x] Analisar, verificar efeitos e implementar: Glyph of Warding
-  - [x] Analisar, verificar efeitos e implementar: Haste
-  - [x] Analisar, verificar efeitos e implementar: Hypnotic Pattern
-  - [x] Analisar, verificar efeitos e implementar: Lightning Bolt
-  - [x] Analisar, verificar efeitos e implementar: Magic Circle
-  - [x] Analisar, verificar efeitos e implementar: Major Image
-  - [x] Analisar, verificar efeitos e implementar: Mass Healing Word
-  - [x] Analisar, verificar efeitos e implementar: Meld into Stone
-  - [x] Analisar, verificar efeitos e implementar: Nondetection
-  - [x] Analisar, verificar efeitos e implementar: Phantom Steed
-  - [x] Analisar, verificar efeitos e implementar: Protection from Energy
-  - [x] Analisar, verificar efeitos e implementar: Remove Curse
-  - [x] Analisar, verificar efeitos e implementar: Revivify
-  - [x] Analisar, verificar efeitos e implementar: Sending
-  - [x] Analisar, verificar efeitos e implementar: Sleet Storm
-  - [x] Analisar, verificar efeitos e implementar: Slow
-  - [x] Analisar, verificar efeitos e implementar: Speak with Dead
-  - [x] Analisar, verificar efeitos e implementar: Speak with Plants
-  - [x] Analisar, verificar efeitos e implementar: Spirit Guardians
-  - [x] Analisar, verificar efeitos e implementar: Stinking Cloud
-  - [x] Analisar, verificar efeitos e implementar: Tongues
-  - [x] Analisar, verificar efeitos e implementar: Vampiric Touch
-  - [x] Analisar, verificar efeitos e implementar: Water Breathing
-  - [x] Analisar, verificar efeitos e implementar: Water Walk
-  - [x] Analisar, verificar efeitos e implementar: Wind Wall
+### 😇 Celestiais (Celestials)
+- [x] Deva
+- [x] Planetar
+- [x] Solar
+- [x] Couatl
+- [x] Pegasus
 
-- [x] **4º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Banishment
-  - [x] Analisar, verificar efeitos e implementar: Blight
-  - [x] Analisar, verificar efeitos e implementar: Compulsion
-  - [x] Analisar, verificar efeitos e implementar: Confusion
-  - [x] Analisar, verificar efeitos e implementar: Conjure Minor Elementals
-  - [x] Analisar, verificar efeitos e implementar: Conjure Woodland Beings
-  - [x] Analisar, verificar efeitos e implementar: Control Water
-  - [x] Analisar, verificar efeitos e implementar: Death Ward
-  - [x] Analisar, verificar efeitos e implementar: Dimension Door
-  - [x] Analisar, verificar efeitos e implementar: Divination
-  - [x] Analisar, verificar efeitos e implementar: Dominate Beast
-  - [x] Analisar, verificar efeitos e implementar: Evard's Black Tentacles
-  - [x] Analisar, verificar efeitos e implementar: Fabricate
-  - [x] Analisar, verificar efeitos e implementar: Faithful Hound
-  - [x] Analisar, verificar efeitos e implementar: Giant Insect
-  - [x] Analisar, verificar efeitos e implementar: Greater Invisibility
-  - [x] Analisar, verificar efeitos e implementar: Hallucinatory Terrain
-  - [x] Analisar, verificar efeitos e implementar: Ice Storm
-  - [x] Analisar, verificar efeitos e implementar: Locate Creature
-  - [x] Analisar, verificar efeitos e implementar: Phantasmal Killer
-  - [x] Analisar, verificar efeitos e implementar: Polymorph
-  - [x] Analisar, verificar efeitos e implementar: Resilient Sphere
-  - [x] Analisar, verificar efeitos e implementar: Secret Chest
-  - [x] Analisar, verificar efeitos e implementar: Stoneskin
-  - [x] Analisar, verificar efeitos e implementar: Wall of Fire
+### 🗿 Constructos (Constructs)
+- [x] Animated Armor
+- [x] Flying Sword
+- [x] Rug of Smothering
+- [x] Clay Golem
+- [x] Flesh Golem
+- [x] Iron Golem
+- [x] Stone Golem
+- [x] Homunculus
+- [x] Shield Guardian
 
-- [x] **5º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Animate Objects
-  - [x] Analisar, verificar efeitos e implementar: Antilife Shell
-  - [x] Analisar, verificar efeitos e implementar: Awaken
-  - [x] Analisar, verificar efeitos e implementar: Cloudkill
-  - [x] Analisar, verificar efeitos e implementar: Commune
-  - [x] Analisar, verificar efeitos e implementar: Commune with Nature
-  - [x] Analisar, verificar efeitos e implementar: Cone of Cold
-  - [x] Analisar, verificar efeitos e implementar: Conjure Elemental
-  - [x] Analisar, verificar efeitos e implementar: Contact Other Plane
-  - [x] Analisar, verificar efeitos e implementar: Contagion
-  - [x] Analisar, verificar efeitos e implementar: Creation
-  - [x] Analisar, verificar efeitos e implementar: Dispel Evil and Good
-  - [x] Analisar, verificar efeitos e implementar: Dominate Person
-  - [x] Analisar, verificar efeitos e implementar: Dream
-  - [x] Analisar, verificar efeitos e implementar: Flame Strike
-  - [x] Analisar, verificar efeitos e implementar: Geas
-  - [x] Analisar, verificar efeitos e implementar: Greater Restoration
-  - [x] Analisar, verificar efeitos e implementar: Hallow
-  - [x] Analisar, verificar efeitos e implementar: Hold Monster
-  - [x] Analisar, verificar efeitos e implementar: Insect Plague
-  - [x] Analisar, verificar efeitos e implementar: Legend Lore
-  - [x] Analisar, verificar efeitos e implementar: Mass Cure Wounds
-  - [x] Analisar, verificar efeitos e implementar: Mislead
-  - [x] Analisar, verificar efeitos e implementar: Modify Memory
-  - [x] Analisar, verificar efeitos e implementar: Passwall
-  - [x] Analisar, verificar efeitos e implementar: Planar Binding
-  - [x] Analisar, verificar efeitos e implementar: Raise Dead
-  - [x] Analisar, verificar efeitos e implementar: Reincarnate
-  - [x] Analisar, verificar efeitos e implementar: Scrying
-  - [x] Analisar, verificar efeitos e implementar: Seeming
-  - [x] Analisar, verificar efeitos e implementar: Telekinesis
-  - [x] Analisar, verificar efeitos e implementar: Teleportation Circle
-  - [x] Analisar, verificar efeitos e implementar: Tree Stride
-  - [x] Analisar, verificar efeitos e implementar: Wall of Force
-  - [x] Analisar, verificar efeitos e implementar: Wall of Stone
+### 🐉 Dragões (Dragons)
+- [x] Black Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Blue Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Brass Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Bronze Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Copper Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Gold Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Green Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Red Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Silver Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] White Dragon (Wyrmling, Young, Adult, Ancient)
+- [x] Dragon Turtle
+- [x] Pseudodragon
+- [x] Wyvern
 
-- [x] **6º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Blade Barrier
-  - [x] Analisar, verificar efeitos e implementar: Chain Lightning
-  - [x] Analisar, verificar efeitos e implementar: Circle of Death
-  - [x] Analisar, verificar efeitos e implementar: Conjure Fey
-  - [x] Analisar, verificar efeitos e implementar: Contingency
-  - [x] Analisar, verificar efeitos e implementar: Create Undead
-  - [x] Analisar, verificar efeitos e implementar: Disintegrate
-  - [x] Analisar, verificar efeitos e implementar: Eyebite
-  - [x] Analisar, verificar efeitos e implementar: Find the Path
-  - [x] Analisar, verificar efeitos e implementar: Forbiddance
-  - [x] Analisar, verificar efeitos e implementar: Globe of Invulnerability
-  - [x] Analisar, verificar efeitos e implementar: Guards and Wards
-  - [x] Analisar, verificar efeitos e implementar: Harm
-  - [x] Analisar, verificar efeitos e implementar: Heal
-  - [x] Analisar, verificar efeitos e implementar: Heroes' Feast
-  - [x] Analisar, verificar efeitos e implementar: Instant Summons
-  - [x] Analisar, verificar efeitos e implementar: Irresistible Dance
-  - [x] Analisar, verificar efeitos e implementar: Move Earth
-  - [x] Analisar, verificar efeitos e implementar: Planar Ally
-  - [x] Analisar, verificar efeitos e implementar: Programmed Illusion
-  - [x] Analisar, verificar efeitos e implementar: Sunbeam
-  - [x] Analisar, verificar efeitos e implementar: Transport via Plants
-  - [x] Analisar, verificar efeitos e implementar: True Seeing
-  - [x] Analisar, verificar efeitos e implementar: Wall of Ice
-  - [x] Analisar, verificar efeitos e implementar: Wall of Thorns
-  - [x] Analisar, verificar efeitos e implementar: Wind Walk
+### 🔥 Elementais (Elementals)
+- [x] Air Elemental
+- [x] Earth Elemental
+- [x] Fire Elemental
+- [x] Water Elemental
+- [x] Azer
+- [x] Djinni
+- [x] Efreeti
+- [x] Gargoyle
+- [x] Invisible Stalker
+- [x] Magmin
+- [x] Mephits (Dust, Ice, Magma, Steam)
+- [x] Salamander
+- [x] Xorn
 
-- [x] **7º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Arcane Sword
-  - [x] Analisar, verificar efeitos e implementar: Delayed Blast Fireball
-  - [x] Analisar, verificar efeitos e implementar: Divine Word
-  - [x] Analisar, verificar efeitos e implementar: Etherealness
-  - [x] Analisar, verificar efeitos e implementar: Finger of Death
-  - [x] Analisar, verificar efeitos e implementar: Fire Storm
-  - [x] Analisar, verificar efeitos e implementar: Forcecage
-  - [x] Analisar, verificar efeitos e implementar: Mirage Arcane
-  - [x] Analisar, verificar efeitos e implementar: Plane Shift
-  - [x] Analisar, verificar efeitos e implementar: Prismatic Spray
-  - [x] Analisar, verificar efeitos e implementar: Resurrection
-  - [x] Analisar, verificar efeitos e implementar: Reverse Gravity
-  - [x] Analisar, verificar efeitos e implementar: Sequester
-  - [x] Analisar, verificar efeitos e implementar: Simulacrum
-  - [x] Analisar, verificar efeitos e implementar: Symbol
-  - [x] Analisar, verificar efeitos e implementar: Teleport
+### 🧚 Fadas (Fey)
+- [x] Dryad
+- [x] Green Hag
+- [x] Pixie
+- [x] Satyr
 
-- [x] **8º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Animal Shapes
-  - [x] Analisar, verificar efeitos e implementar: Antimagic Field
-  - [x] Analisar, verificar efeitos e implementar: Antipathy/Sympathy
-  - [x] Analisar, verificar efeitos e implementar: Clone
-  - [x] Analisar, verificar efeitos e implementar: Control Weather
-  - [x] Analisar, verificar efeitos e implementar: Earthquake
-  - [x] Analisar, verificar efeitos e implementar: Feeblemind
-  - [x] Analisar, verificar efeitos e implementar: Holy Aura
-  - [x] Analisar, verificar efeitos e implementar: Incendiary Cloud
-  - [x] Analisar, verificar efeitos e implementar: Maze
-  - [x] Analisar, verificar efeitos e implementar: Mind Blank
-  - [x] Analisar, verificar efeitos e implementar: Power Word Stun
-  - [x] Analisar, verificar efeitos e implementar: Sunburst
-  - [x] Analisar, verificar efeitos e implementar: Tsunami
+### 👿 Corruptores (Fiends - Demônios, Diabos, Yugoloths)
+- [x] Balor
+- [x] Dretch
+- [x] Glabrezu
+- [x] Hezrou
+- [x] Marilith
+- [x] Nalfeshnee
+- [x] Quasit
+- [x] Shadow Demon
+- [x] Vrock
+- [x] Barbed Devil
+- [x] Bearded Devil
+- [x] Bone Devil
+- [x] Chain Devil
+- [x] Erinyes
+- [x] Horned Devil
+- [x] Ice Devil
+- [x] Imp
+- [x] Lemure
+- [x] Pit Fiend
+- [x] Hell Hound
+- [x] Nightmare
+- [x] Rakshasa
+- [x] Succubus/Incubus
 
-- [x] **9º Nível**
-  - [x] Analisar, verificar efeitos e implementar: Astral Projection
-  - [x] Analisar, verificar efeitos e implementar: Foresight
-  - [x] Analisar, verificar efeitos e implementar: Gate
-  - [x] Analisar, verificar efeitos e implementar: Imprisonment
-  - [x] Analisar, verificar efeitos e implementar: Mass Heal
-  - [x] Analisar, verificar efeitos e implementar: Meteor Swarm
-  - [x] Analisar, verificar efeitos e implementar: Power Word Heal
-  - [x] Analisar, verificar efeitos e implementar: Power Word Kill
-  - [x] Analisar, verificar efeitos e implementar: Prismatic Wall
-  - [x] Analisar, verificar efeitos e implementar: Shapechange
-  - [x] Analisar, verificar efeitos e implementar: Time Stop
-  - [x] Analisar, verificar efeitos e implementar: True Polymorph
-  - [x] Analisar, verificar efeitos e implementar: True Resurrection
-  - [x] Analisar, verificar efeitos e implementar: Weird
-  - [x] Analisar, verificar efeitos e implementar: Wish
+### 🏔️ Gigantes (Giants)
+- [x] Cloud Giant
+- [x] Fire Giant
+- [x] Frost Giant
+- [x] Hill Giant
+- [x] Stone Giant
+- [x] Storm Giant
+- [x] Ettin
+- [x] Ogre
+- [x] Oni
+- [x] Troll
 
+### ⚔️ Humanoides & NPCs (Humanoids & NPC Statblocks)
+- [x] Acolyte
+- [x] Archmage
+- [x] Assassin
+- [x] Bandit
+- [x] Bandit Captain
+- [x] Berserker
+- [x] Commoner
+- [x] Cultist
+- [x] Cult Fanatic
+- [x] Druid
+- [x] Gladiator
+- [x] Guard
+- [x] Knight
+- [x] Mage
+- [x] Noble
+- [x] Priest
+- [x] Scout
+- [x] Spy
+- [x] Thug
+- [x] Tribal Warrior
+- [x] Veteran
+- [x] Bugbear
+- [x] Duergar
+- [x] Elf (Drow)
+- [x] Gnoll
+- [x] Goblin
+- [x] Grimlock
+- [x] Hobgoblin
+- [x] Kobold
+- [x] Lizardfolk
+- [x] Merfolk
+- [x] Orc
+- [x] Sahuagin
+- [x] Werebear
+- [x] Wereboar
+- [x] Wererat
+- [x] Weretiger
+- [x] Werewolf
+
+### 🦁 Monstruosidades (Monstrosities)
+- [x] Ankheg
+- [x] Basilisk
+- [x] Behir
+- [x] Bulette
+- [x] Centaur
+- [x] Chimera
+- [x] Cockatrice
+- [x] Darkmantle
+- [x] Displacer Beast
+- [x] Doppelganger
+- [x] Drider
+- [x] Gorgon
+- [x] Grick
+- [x] Griffon
+- [x] Harpy
+- [x] Hippogriff
+- [x] Hydra
+- [x] Kraken
+- [x] Lamia
+- [x] Manticore
+- [x] Medusa
+- [x] Minotaur
+- [x] Naga (Guardian, Spirit)
+- [x] Owlbear
+- [x] Purple Worm
+- [x] Remorhaz
+- [x] Roc
+- [x] Rust Monster
+- [x] Sphinx (Androsphinx, Gynosphinx)
+- [x] Tarrasque
+- [x] Unicorn
+- [x] Yuan-ti Pureblood
+
+### 🧪 Gosmas (Oozes)
+- [x] Black Pudding
+- [x] Gelatinous Cube
+- [x] Gray Ooze
+- [x] Ochre Jelly
+
+### 🌿 Plantas Mágicas (Plants)
+- [x] Awakened Shrub
+- [x] Awakened Tree
+- [x] Shambling Mound
+- [x] Treant
+
+### 💀 Mortos-Vivos (Undead)
+- [x] Banshee
+- [x] Ghoul
+- [x] Ghast
+- [x] Ghost
+- [x] Lich
+- [x] Minotaur Skeleton
+- [x] Mummy
+- [x] Mummy Lord
+- [x] Ogre Zombie
+- [x] Shadow
+- [x] Skeleton
+- [x] Specter
+- [x] Vampire
+- [x] Vampire Spawn
+- [x] Wight
+- [x] Wraith
+- [x] Zombie
