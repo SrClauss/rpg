@@ -1,295 +1,42 @@
-# Plano de Implementação - Sistema de Monstros & Criaturas (SRD 5.1)
+# Plano de Implementacao — Frontend: Criacao de Personagens, 12 Telas de Classe e Interacao Turno a Turno
 
-Este documento estabelece o plano detalhado de implementação e a checklist completa de mecanização para todos os monstros, criaturas e NPCs do **SRD 5.1 (Páginas 254 a 359)** na RPG Engine em Rust.
-
----
-
-## 🏗️ 1. Infraestrutura Base & Suporte a Monstros
-
-- [x] **Mecânicas Globais de Monstros**
-  - [x] Estrutura `MonsterStatBlock` / `Monster` & Enums `CreatureType` e `CreatureSize`
-  - [x] Mapeamento de Dados de Vida por Tamanho (`Tiny d4` até `Gargantuan d20`)
-  - [x] Sistema de Resistências, Imunidades e Vulnerabilidades a Danos e Condições
-  - [x] Sistema de Sentidos Especiais (`Blindsight`, `Darkvision`, `Tremorsense`, `Truesight`)
-  - [x] Suporte a Conjuração Inata (`Innate Spellcasting`) e Psionismo (`Psionics`)
-  - [x] Mecânica de Recarga em Combate (`Recharge X-Y` via rola d6 no início do turno)
-  - [x] Suporte a Ações Lendárias (`Legendary Actions`), Ações de Guarida (`Lair Actions`) e Efeitos Regionais
+## Objetivo
+Construir o frontend do RPG D&D 5e contendo o fluxo inicial de Criação de Personagens, **12 telas de jogo exclusivas** (uma para cada classe original do D&D 5e) exibindo todos os atributos, vida, recursos de classe e espaços de magia usados/disponíveis, integradas ao painel de comunicação com o mundo e consulta de possibilidades turno a turno através das 3 vias (Possibilidades da Ficha, Possibilidades Contextuais do Cenário e Interação Textual Livre avaliada pela IA).
 
 ---
 
-## 👹 2. Checklist por Categoria de Criaturas
+## Checklist de Subproblemas
 
-### 👁️ Aberrações (Aberrations)
-- [x] Aboleth
-- [x] Cloaker
-- [x] Gibbering Mouther
-- [x] Otyugh
-- [x] Roper
-- [x] Will-o'-Wisp
+### Fase 1: Fundacao e Criacao de Personagens
+- [x] **T1** — **Fundação do Projeto Frontend e Contratos de Dados (`frontend/`):** Configurar o projeto web (React + TypeScript + Vite) com os contratos de tipos espelhando o motor Rust (Atributos, Modificadores, Perícias, HP, CA, Espaços de Magia usados/totais, Recursos de Classe, Economia de Ações do Turno e Estado do Mundo/Beat).
+- [x] **T2** — **Fluxo de Criação de Personagens:** Implementar a tela passo a passo de criação de personagem (Nome, Raça, Antecedente, alocação de Atributos `STR/DEX/CON/INT/WIS/CHA` com cálculo em tempo real de modificadores/CA/HP, Perícias, Equipamento e seleção das 12 Classes Originais), redirecionando ao final para a tela específica da classe escolhida.
 
-### 🐻 Bestas & Animais (Beasts)
-- [x] Ape
-- [x] Baboon
-- [x] Badger
-- [x] Black Bear
-- [x] Boar
-- [x] Brown Bear
-- [x] Constrictor Snake
-- [x] Crocodile
-- [x] Dire Wolf
-- [x] Draft Horse
-- [x] Eagle
-- [x] Elephant
-- [x] Giant Ape
-- [x] Giant Badger
-- [x] Giant Bat
-- [x] Giant Boar
-- [x] Giant Centipede
-- [x] Giant Constrictor Snake
-- [x] Giant Crab
-- [x] Giant Crocodile
-- [x] Giant Eagle
-- [x] Giant Elk
-- [x] Giant Fire Beetle
-- [x] Giant Frog
-- [x] Giant Goat
-- [x] Giant Hyena
-- [x] Giant Lizard
-- [x] Giant Octopus
-- [x] Giant Owl
-- [x] Giant Poisonous Snake
-- [x] Giant Rat
-- [x] Giant Raven
-- [x] Giant Scorpion
-- [x] Giant Shark
-- [x] Giant Spider
-- [x] Giant Toad
-- [x] Giant Vulture
-- [x] Giant Wasp
-- [x] Giant Weasel
-- [x] Giant Wolf Spider
-- [x] Goat
-- [x] Hawk
-- [x] Hunter Shark
-- [x] Hyena
-- [x] Jackal
-- [x] Killer Whale
-- [x] Lion
-- [x] Lizard
-- [x] Mule
-- [x] Octopus
-- [x] Owl
-- [x] Panther
-- [x] Phase Spider
-- [x] Plesiosaurus
-- [x] Poisonous Snake
-- [x] Pony
-- [x] Reef Shark
-- [x] Rhinoceros
-- [x] Riding Horse
-- [x] Saber-Toothed Tiger
-- [x] Scorpion
-- [x] Sea Horse
-- [x] Spider
-- [x] Tiger
-- [x] Tyrannosaurus Rex
-- [x] Vulture
-- [x] Warhorse
-- [x] Weasel
-- [x] Wolf
+### Fase 2: Nucleo de Jogo e Triade de Interacao Turno a Turno
+- [x] **T3** — **Motor de Tela de Jogo Base & Console de Turno (3 Vias):** Implementar os módulos fundamentais presentes nas 12 telas de classe:
+  - Painel de Atributos, Salvaguardas, Perícias e Status Vitais (`HP` atual/máx/temp, `CA`, Iniciativa, Deslocamento, Condições, Salvaguardas de Morte).
+  - Rastreador interativo de Espaços de Magia (*Spell Slots* usados vs. disponíveis do 1º ao 9º círculo).
+  - Visão de Mundo (Narrativa de *Beats* + Grid Tático de Combate).
+  - Consultor de Possibilidades Turno a Turno com orçamento de `Ação`, `Ação Bônus`, `Movimento` e `Reação` operando nas **3 Vias**:
+    1. *Via 1:* Possibilidades Mecânicas da Ficha filtradas pelos recursos/slots ativos.
+    2. *Via 2:* Possibilidades Contextuais do Cenário (testes e interações com objetos/NPCs da cena).
+    3. *Via 3:* Interação Textual Livre (enviada para avaliação da IA sobre uso ou não das mecânicas do jogo).
 
-### 😇 Celestiais (Celestials)
-- [x] Deva
-- [x] Planetar
-- [x] Solar
-- [x] Couatl
-- [x] Pegasus
+### Fase 3: As 12 Telas Exclusivas por Classe Original
+- [x] **T4** — **Telas das Classes Marciais (`Bárbaro`, `Guerreiro`, `Ladino`, `Monge`):**
+  - *Bárbaro:* HUD de *Fúria* (ativa/inativa, usos gastos, bônus de dano), *Defesa Sem Armadura* (`10 + DEX + CON`), *Ataque Descuidado* e *Crítico Brutal*.
+  - *Guerreiro:* HUD de *Estilo de Combate*, *Retomar o Fôlego*, *Surto de Ação*, *Indomável* e Manobras/Dados de Superioridade.
+  - *Ladino:* HUD de *Ataque Furtivo* (dados escaláveis e validação de vantagem/aliado adjacente), atalhos de *Ação Ardilosa* e *Especializações (Expertise)*.
+  - *Monge:* HUD de *Pontos de Ki* (usados/restantes), atalhos de Ki (*Rajada de Golpes*, *Defesa Paciente*, *Passo do Vento*), dado de *Artes Marciais* e *Defesa Sem Armadura* (`10 + DEX + WIS`).
+- [x] **T5** — **Telas dos Conjuradores Divinos e Naturais (`Clérigo`, `Druida`, `Paladino`, `Patrulheiro`):**
+  - *Clérigo:* HUD de *Canalizar Divindade* (usos e efeitos), *Magias de Domínio* sempre preparadas, gaveta de *Magias Preparadas* (`WIS + nível`) e *Espaços de Magia*.
+  - *Druida:* HUD de *Forma Selvagem (Wild Shape)* com sobreposição de HP/atributos da besta assumida, *Magias Preparadas* (`WIS + nível`) e *Espaços de Magia*.
+  - *Paladino:* HUD com pool numérico de *Cura pelas Mãos* (`nível x 5` pontos gastos/restantes), *Sentido Divino*, gatilho de *Destruição Divina (Divine Smite)* por slot e *Espaços de Magia* (1º ao 5º).
+  - *Patrulheiro:* HUD de *Inimigo Favorito*, *Explorador Natural*, *Estilo de Combate*, controle de *Marca do Caçador* e *Espaços de Magia* (1º ao 5º).
+- [x] **T6** — **Telas dos Conjuradores Arcanos e de Pacto (`Mago`, `Feiticeiro`, `Bruxo`, `Bardo`):**
+  - *Mago:* HUD dividido entre *Grimório Completo* (magias no livro e rituais) vs. *Magias Preparadas* (`INT + nível`), *Recuperação Arcana* e *Espaços de Magia* (1º ao 9º).
+  - *Feiticeiro:* HUD de *Pontos de Feitiçaria* (usados/restantes), conversor *Pontos ↔ Espaços de Magia*, seletores de *Metamagia* acoplados à conjuração e *Espaços de Magia*.
+  - *Bruxo:* HUD exclusivo de *Magia de Pacto* (slots de nível único recarregáveis em descanso curto), *Invocações Místicas* ativas, *Dádiva do Pacto* e *Patrono*.
+  - *Bardo:* HUD de dados de *Inspiração de Bardo* (usados/restantes), *Canção de Descanso*, *Aptidão (Expertise)*, Magias Conhecidas e *Espaços de Magia*.
 
-### 🗿 Constructos (Constructs)
-- [x] Animated Armor
-- [x] Flying Sword
-- [x] Rug of Smothering
-- [x] Clay Golem
-- [x] Flesh Golem
-- [x] Iron Golem
-- [x] Stone Golem
-- [x] Homunculus
-- [x] Shield Guardian
-
-### 🐉 Dragões (Dragons)
-- [x] Black Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Blue Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Brass Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Bronze Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Copper Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Gold Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Green Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Red Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Silver Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] White Dragon (Wyrmling, Young, Adult, Ancient)
-- [x] Dragon Turtle
-- [x] Pseudodragon
-- [x] Wyvern
-
-### 🔥 Elementais (Elementals)
-- [x] Air Elemental
-- [x] Earth Elemental
-- [x] Fire Elemental
-- [x] Water Elemental
-- [x] Azer
-- [x] Djinni
-- [x] Efreeti
-- [x] Gargoyle
-- [x] Invisible Stalker
-- [x] Magmin
-- [x] Mephits (Dust, Ice, Magma, Steam)
-- [x] Salamander
-- [x] Xorn
-
-### 🧚 Fadas (Fey)
-- [x] Dryad
-- [x] Green Hag
-- [x] Pixie
-- [x] Satyr
-
-### 👿 Corruptores (Fiends - Demônios, Diabos, Yugoloths)
-- [x] Balor
-- [x] Dretch
-- [x] Glabrezu
-- [x] Hezrou
-- [x] Marilith
-- [x] Nalfeshnee
-- [x] Quasit
-- [x] Shadow Demon
-- [x] Vrock
-- [x] Barbed Devil
-- [x] Bearded Devil
-- [x] Bone Devil
-- [x] Chain Devil
-- [x] Erinyes
-- [x] Horned Devil
-- [x] Ice Devil
-- [x] Imp
-- [x] Lemure
-- [x] Pit Fiend
-- [x] Hell Hound
-- [x] Nightmare
-- [x] Rakshasa
-- [x] Succubus/Incubus
-
-### 🏔️ Gigantes (Giants)
-- [x] Cloud Giant
-- [x] Fire Giant
-- [x] Frost Giant
-- [x] Hill Giant
-- [x] Stone Giant
-- [x] Storm Giant
-- [x] Ettin
-- [x] Ogre
-- [x] Oni
-- [x] Troll
-
-### ⚔️ Humanoides & NPCs (Humanoids & NPC Statblocks)
-- [x] Acolyte
-- [x] Archmage
-- [x] Assassin
-- [x] Bandit
-- [x] Bandit Captain
-- [x] Berserker
-- [x] Commoner
-- [x] Cultist
-- [x] Cult Fanatic
-- [x] Druid
-- [x] Gladiator
-- [x] Guard
-- [x] Knight
-- [x] Mage
-- [x] Noble
-- [x] Priest
-- [x] Scout
-- [x] Spy
-- [x] Thug
-- [x] Tribal Warrior
-- [x] Veteran
-- [x] Bugbear
-- [x] Duergar
-- [x] Elf (Drow)
-- [x] Gnoll
-- [x] Goblin
-- [x] Grimlock
-- [x] Hobgoblin
-- [x] Kobold
-- [x] Lizardfolk
-- [x] Merfolk
-- [x] Orc
-- [x] Sahuagin
-- [x] Werebear
-- [x] Wereboar
-- [x] Wererat
-- [x] Weretiger
-- [x] Werewolf
-
-### 🦁 Monstruosidades (Monstrosities)
-- [x] Ankheg
-- [x] Basilisk
-- [x] Behir
-- [x] Bulette
-- [x] Centaur
-- [x] Chimera
-- [x] Cockatrice
-- [x] Darkmantle
-- [x] Displacer Beast
-- [x] Doppelganger
-- [x] Drider
-- [x] Gorgon
-- [x] Grick
-- [x] Griffon
-- [x] Harpy
-- [x] Hippogriff
-- [x] Hydra
-- [x] Kraken
-- [x] Lamia
-- [x] Manticore
-- [x] Medusa
-- [x] Minotaur
-- [x] Naga (Guardian, Spirit)
-- [x] Owlbear
-- [x] Purple Worm
-- [x] Remorhaz
-- [x] Roc
-- [x] Rust Monster
-- [x] Sphinx (Androsphinx, Gynosphinx)
-- [x] Tarrasque
-- [x] Unicorn
-- [x] Yuan-ti Pureblood
-
-### 🧪 Gosmas (Oozes)
-- [x] Black Pudding
-- [x] Gelatinous Cube
-- [x] Gray Ooze
-- [x] Ochre Jelly
-
-### 🌿 Plantas Mágicas (Plants)
-- [x] Awakened Shrub
-- [x] Awakened Tree
-- [x] Shambling Mound
-- [x] Treant
-
-### 💀 Mortos-Vivos (Undead)
-- [x] Banshee
-- [x] Ghoul
-- [x] Ghast
-- [x] Ghost
-- [x] Lich
-- [x] Minotaur Skeleton
-- [x] Mummy
-- [x] Mummy Lord
-- [x] Ogre Zombie
-- [x] Shadow
-- [x] Skeleton
-- [x] Specter
-- [x] Vampire
-- [x] Vampire Spawn
-- [x] Wight
-- [x] Wraith
-- [x] Zombie
+### Fase 4: Integracao com o Servidor Rust e Arbitragem da IA
+- [x] **T7** — **Integração API Backend (`Axum`) + Frontend:** Expor endpoints HTTP no backend em Rust para criação de personagem, sincronização do estado de turno (`CampaignState`) e processamento das 3 vias de ação no turno (conectando a entrada textual livre ao orquestrador IA + resolvedor mecânico determinístico).

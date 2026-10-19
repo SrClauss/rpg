@@ -1,0 +1,197 @@
+import type { AbilityName, CharacterClassType } from '../../types/character';
+
+export interface ClassMetadata {
+  id: CharacterClassType;
+  namePt: string;
+  hitDie: string;
+  hitDieValue: number;
+  primaryAbilities: AbilityName[];
+  savingThrows: AbilityName[];
+  description: string;
+  isSpellcaster: boolean;
+  spellcastingAbility?: AbilityName;
+  iconName: string;
+  color: string;
+}
+
+export const DND_CLASSES: ClassMetadata[] = [
+  {
+    id: 'Barbarian',
+    namePt: 'Bárbaro',
+    hitDie: 'd12',
+    hitDieValue: 12,
+    primaryAbilities: ['strength', 'constitution'],
+    savingThrows: ['strength', 'constitution'],
+    description: 'Um guerreiro feroz impulsionado pela fúria primordial e resistência incomparável sem armadura.',
+    isSpellcaster: false,
+    iconName: 'Flame',
+    color: '#ef4444',
+  },
+  {
+    id: 'Bard',
+    namePt: 'Bardo',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['charisma', 'dexterity'],
+    savingThrows: ['dexterity', 'charisma'],
+    description: 'Um mestre inspirador de magia e versatilidade artística que tece feitiços através de música e retórica.',
+    isSpellcaster: true,
+    spellcastingAbility: 'charisma',
+    iconName: 'Music',
+    color: '#ec4899',
+  },
+  {
+    id: 'Cleric',
+    namePt: 'Clérigo',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['wisdom', 'constitution'],
+    savingThrows: ['wisdom', 'charisma'],
+    description: 'Um campeão sacerdotal que empunha magia divina e canaliza o poder direto de sua divindade.',
+    isSpellcaster: true,
+    spellcastingAbility: 'wisdom',
+    iconName: 'Sun',
+    color: '#eab308',
+  },
+  {
+    id: 'Druid',
+    namePt: 'Druida',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['wisdom', 'constitution'],
+    savingThrows: ['intelligence', 'wisdom'],
+    description: 'Um guardião da natureza ancestral capaz de adotar formas de bestas selvagens e conjurar forças elementais.',
+    isSpellcaster: true,
+    spellcastingAbility: 'wisdom',
+    iconName: 'Trees',
+    color: '#10b981',
+  },
+  {
+    id: 'Fighter',
+    namePt: 'Guerreiro',
+    hitDie: 'd10',
+    hitDieValue: 10,
+    primaryAbilities: ['strength', 'constitution'],
+    savingThrows: ['strength', 'constitution'],
+    description: 'Um especialista marcial mestre em todas as armas, armaduras e manobras táticas de combate.',
+    isSpellcaster: false,
+    iconName: 'Shield',
+    color: '#64748b',
+  },
+  {
+    id: 'Monk',
+    namePt: 'Monge',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['dexterity', 'wisdom'],
+    savingThrows: ['strength', 'dexterity'],
+    description: 'Um mestre em artes marciais que canaliza a energia do Ki corporal em velocidade, agilidade e golpes fulminantes.',
+    isSpellcaster: false,
+    iconName: 'Zap',
+    color: '#06b6d4',
+  },
+  {
+    id: 'Paladin',
+    namePt: 'Paladino',
+    hitDie: 'd10',
+    hitDieValue: 10,
+    primaryAbilities: ['strength', 'charisma'],
+    savingThrows: ['wisdom', 'charisma'],
+    description: 'Um guerreiro sagrado ligado por um juramento inquebrável, canalizando destruição divina e cura pelas mãos.',
+    isSpellcaster: true,
+    spellcastingAbility: 'charisma',
+    iconName: 'Sword',
+    color: '#f59e0b',
+  },
+  {
+    id: 'Ranger',
+    namePt: 'Patrulheiro',
+    hitDie: 'd10',
+    hitDieValue: 10,
+    primaryAbilities: ['dexterity', 'wisdom'],
+    savingThrows: ['strength', 'dexterity'],
+    description: 'Um caçador e rastreador incomparável das regiões ermas que combate ameaças na fronteira da civilização.',
+    isSpellcaster: true,
+    spellcastingAbility: 'wisdom',
+    iconName: 'Compass',
+    color: '#84cc16',
+  },
+  {
+    id: 'Rogue',
+    namePt: 'Ladino',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['dexterity', 'intelligence'],
+    savingThrows: ['dexterity', 'intelligence'],
+    description: 'Um mestre da furtividade, precisão e ardilosidade que ataca pontos vitais com Ataque Furtivo.',
+    isSpellcaster: false,
+    iconName: 'Crosshair',
+    color: '#6b7280',
+  },
+  {
+    id: 'Sorcerer',
+    namePt: 'Feiticeiro',
+    hitDie: 'd6',
+    hitDieValue: 6,
+    primaryAbilities: ['charisma', 'constitution'],
+    savingThrows: ['constitution', 'charisma'],
+    description: 'Um conjurador que manifesta magia inata decorrente de uma linhagem exótica ou evento cósmico.',
+    isSpellcaster: true,
+    spellcastingAbility: 'charisma',
+    iconName: 'Sparkles',
+    color: '#a855f7',
+  },
+  {
+    id: 'Warlock',
+    namePt: 'Bruxo',
+    hitDie: 'd8',
+    hitDieValue: 8,
+    primaryAbilities: ['charisma', 'constitution'],
+    savingThrows: ['wisdom', 'charisma'],
+    description: 'Um praticante de magia que selou um pacto com uma entidade de outro plano em troca de segredos arcanos.',
+    isSpellcaster: true,
+    spellcastingAbility: 'charisma',
+    iconName: 'Eye',
+    color: '#8b5cf6',
+  },
+  {
+    id: 'Wizard',
+    namePt: 'Mago',
+    hitDie: 'd6',
+    hitDieValue: 6,
+    primaryAbilities: ['intelligence', 'constitution'],
+    savingThrows: ['intelligence', 'wisdom'],
+    description: 'Um erudito das artes mágicas que memoriza e cataloga magias poderosas em seu grimório através de estudo rigoroso.',
+    isSpellcaster: true,
+    spellcastingAbility: 'intelligence',
+    iconName: 'BookOpen',
+    color: '#3b82f6',
+  },
+];
+
+export const RACES = [
+  'Humano (+1 em todos)',
+  'Alto Elfo (+2 DES, +1 INT)',
+  'Elfo da Floresta (+2 DES, +1 SAB)',
+  'Anão da Colina (+2 CON, +1 SAB)',
+  'Anão da Montanha (+2 FOR, +2 CON)',
+  'Halfling Pés-Leves (+2 DES, +1 CAR)',
+  'Draconato (+2 FOR, +1 CAR)',
+  'Tiefling (+2 CAR, +1 INT)',
+  'Gnomo da Rocha (+2 INT, +1 CON)',
+  'Meio-Elfo (+2 CAR, +1 em dois à escolha)',
+  'Meio-Orc (+2 FOR, +1 CON)',
+];
+
+export const BACKGROUNDS = [
+  { name: 'Acólito', skills: ['Intuição', 'Religião'] },
+  { name: 'Soldado', skills: ['Atletismo', 'Intimidação'] },
+  { name: 'Criminoso', skills: ['Enganação', 'Furtividade'] },
+  { name: 'Herói do Povo', skills: ['Adestrar Animais', 'Sobrevivência'] },
+  { name: 'Sábio', skills: ['Arcanismo', 'História'] },
+  { name: 'Nobre', skills: ['História', 'Persuasão'] },
+  { name: 'Forasteiro', skills: ['Atletismo', 'Sobrevivência'] },
+  { name: 'Artesão de Guilda', skills: ['Intuição', 'Persuasão'] },
+];
+
+export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];

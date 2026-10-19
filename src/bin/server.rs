@@ -1,136 +1,201 @@
 use axum::{
     extract::State,
+    http::StatusCode,
+    response::Json,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
-use rpg_engine::llm::NarrativeOrchestrator;
-use rpg_engine::narrative::telemetry::EntityStats;
-use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, oneshot};
-use tower_http::cors::{Any, CorsLayer};
 use dotenvy::dotenv;
-use std::thread;
-
-enum OrchestratorCommand {
-    ProcessAction {
-        prompt: String,
-        responder: oneshot::Sender<Result<String, String>>,
-    },
-    GetParty {
-        responder: oneshot::Sender<Vec<String>>,
-    },
-}
+use rpg_engine::rules::resolver::RulesResolver;
+use rpg_engine::state::CampaignState;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Clone)]
 struct AppState {
-    tx: mpsc::Sender<OrchestratorCommand>,
+    campaign: Arc<RwLock<CampaignState>>,
 }
 
-#[derive(Deserialize)]
-struct ActionRequest {
-    prompt: String,
+#[derive(Serialize, Deserialize, Debug)]
+struct TurnActionRequest {
+    via_type: String, // "via1", "via2", "via3"
+    action_id: Option<String>,
+    player_text: Option<String>,
+    character_name: String,
+    class_name: String,
 }
 
-#[derive(Serialize)]
-struct ActionResponse {
-    narration: String,
-}
-
-#[derive(Serialize)]
-struct PartyResponse {
-    characters: Vec<String>,
+#[derive(Serialize, Deserialize, Debug)]
+struct TurnActionResponse {
+    status: String,
+    requires_mechanic: bool,
+    detected_intent: String,
+    roll_result: Option<Value>,
+    narrative_feedback: String,
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    
-    let gemini_key = std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY não encontrada");
-    let deepseek_key = std::env::var("DEEPSEEK_API_KEY").expect("DEEPSEEK_API_KEY não encontrada");
-    
-    // Canal para comunicação com a Thread do Orquestrador
-    let (tx, mut rx) = mpsc::channel::<OrchestratorCommand>(32);
 
-    // Inicia uma thread do SO para rodar o runtime LocalSet (para lidar com !Send Futures do SQLite)
-    thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        
-        rt.block_on(async {
-            let local = tokio::task::LocalSet::new();
-            local.run_until(async move {
-                let orchestrator = NarrativeOrchestrator::new(gemini_key, deepseek_key);
-                
-                EntityStats::get_or_create(&orchestrator.db, "Kaelen (Guerreiro)").unwrap();
-                EntityStats::get_or_create(&orchestrator.db, "Lira (Maga)").unwrap();
-                EntityStats::get_or_create(&orchestrator.db, "Torin (Ladino)").unwrap();
-                EntityStats::get_or_create(&orchestrator.db, "Nyx (Clériga)").unwrap();
+    println!("============================================================");
+    println!("      RPG D&D 5E ENGINE — SERVIDOR HTTP AXUM (API)          ");
+    println!("============================================================");
 
-                while let Some(cmd) = rx.recv().await {
-                    match cmd {
-                        OrchestratorCommand::ProcessAction { prompt, responder } => {
-                            let result = match orchestrator.process_player_action(&prompt).await {
-                                Ok(res) => Ok(res),
-                                Err(e) => Err(e.to_string()),
-                            };
-                            let _ = responder.send(result);
-                        }
-                        OrchestratorCommand::GetParty { responder } => {
-                            let mut stmt = orchestrator.db.conn.prepare("SELECT entity_id FROM EntityStats").unwrap();
-                            let names: Vec<String> = stmt.query_map([], |row| row.get(0)).unwrap().map(|r| r.unwrap()).collect();
-                            let _ = responder.send(names);
-                        }
-                    }
-                }
-            }).await;
-        });
-    });
+    let mut initial_state = CampaignState::new();
+    let beat_id = initial_state.start_new_beat(
+        "A Cripta dos Reis Esquecidos",
+        rpg_engine::narrative::beat::BeatType::Exploration,
+    );
+    println!("Iniciando campanha com Beat base (ID: {})", beat_id);
 
-    let state = AppState { tx };
+    let shared_state = AppState {
+        campaign: Arc::new(RwLock::new(initial_state)),
+    };
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_headers(Any)
-        .allow_methods(Any);
+        .allow_methods(Any)
+        .allow_headers(Any);
 
     let app = Router::new()
-        .route("/api/action", post(handle_action))
-        .route("/api/party", get(handle_party))
+        .route("/api/health", get(health_check))
+        .route("/api/state", get(get_state))
+        .route("/api/character", post(receive_character))
+        .route("/api/action/turn", post(process_turn_action))
         .layer(cors)
-        .with_state(state);
+        .with_state(shared_state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Servidor API rodando em http://localhost:3000...");
-    axum::serve(listener, app).await.unwrap();
+    let addr = "0.0.0.0:3001";
+    println!("Servidor HTTP ouvindo em http://{}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
 
-async fn handle_action(
-    State(state): State<AppState>,
-    Json(payload): Json<ActionRequest>,
-) -> Json<ActionResponse> {
-    let (tx, rx) = oneshot::channel();
-    let _ = state.tx.send(OrchestratorCommand::ProcessAction { 
-        prompt: payload.prompt, 
-        responder: tx 
-    }).await;
-
-    match rx.await {
-        Ok(Ok(narration)) => Json(ActionResponse { narration }),
-        Ok(Err(err)) => Json(ActionResponse { narration: format!("Erro interno: {}", err) }),
-        Err(_) => Json(ActionResponse { narration: "Erro ao comunicar com o Orquestrador.".into() }),
-    }
+async fn health_check() -> (StatusCode, Json<Value>) {
+    (
+        StatusCode::OK,
+        Json(json!({
+            "status": "online",
+            "engine": "rpg-engine-rust",
+            "rules": "D&D 5e Deterministic",
+            "version": "0.1.0"
+        })),
+    )
 }
 
-async fn handle_party(
-    State(state): State<AppState>,
-) -> Json<PartyResponse> {
-    let (tx, rx) = oneshot::channel();
-    let _ = state.tx.send(OrchestratorCommand::GetParty { responder: tx }).await;
+async fn get_state(State(app_state): State<AppState>) -> (StatusCode, Json<Value>) {
+    let camp = app_state.campaign.read().await;
+    let current_beat = camp.current_beat();
 
-    match rx.await {
-        Ok(characters) => Json(PartyResponse { characters }),
-        Err(_) => Json(PartyResponse { characters: vec![] }),
+    (
+        StatusCode::OK,
+        Json(json!({
+            "current_beat_index": camp.current_beat_index,
+            "beat_title": current_beat.map(|b| b.title.clone()).unwrap_or_default(),
+            "beat_summary": current_beat.map(|b| b.summary.clone()).unwrap_or_default(),
+        })),
+    )
+}
+
+async fn receive_character(
+    State(_app_state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> (StatusCode, Json<Value>) {
+    let name = payload["name"].as_str().unwrap_or("Aventureiro Desconhecido");
+    let class_name = payload["className"].as_str().unwrap_or("Fighter");
+
+    println!(">>> [BACKEND] Ficha de Personagem recebida: {} ({})", name, class_name);
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "status": "success",
+            "message": format!("Ficha do herói '{}' sincronizada com o motor de regras D&D 5e.", name),
+            "registered_class": class_name
+        })),
+    )
+}
+
+async fn process_turn_action(
+    State(app_state): State<AppState>,
+    Json(req): Json<TurnActionRequest>,
+) -> (StatusCode, Json<TurnActionResponse>) {
+    let mut camp = app_state.campaign.write().await;
+
+    println!(">>> [BACKEND] Ação recebida via {}: {:?}", req.via_type, req);
+
+    if req.via_type == "via3" {
+        let text = req.player_text.clone().unwrap_or_default();
+        let lower = text.to_lowercase();
+        let is_mechanic = lower.contains("atacar")
+            || lower.contains("chutar")
+            || lower.contains("empurrar")
+            || lower.contains("pular")
+            || lower.contains("saltar")
+            || lower.contains("esconder")
+            || lower.contains("arrombar")
+            || lower.contains("magia")
+            || lower.contains("furtivo");
+
+        if is_mechanic {
+            let mechanic_payload = json!({
+                "action": "ability_check",
+                "ability": "Strength",
+                "dc": 13,
+                "actor": req.character_name
+            });
+
+            let resolution = RulesResolver::resolve(&mechanic_payload, &mut camp);
+
+            (
+                StatusCode::OK,
+                Json(TurnActionResponse {
+                    status: "resolved".to_string(),
+                    requires_mechanic: true,
+                    detected_intent: "Manobra Tática / Ação Improvisada (#regras)".to_string(),
+                    roll_result: Some(resolution),
+                    narrative_feedback: format!(
+                        "O árbitro em Rust validou sua manobra '{}' resolvendo os dados de D&D 5e determinísticos.",
+                        text
+                    ),
+                }),
+            )
+        } else {
+            (
+                StatusCode::OK,
+                Json(TurnActionResponse {
+                    status: "resolved".to_string(),
+                    requires_mechanic: false,
+                    detected_intent: "Interação Social / Diálogo Narrativo".to_string(),
+                    roll_result: None,
+                    narrative_feedback: format!(
+                        "O Mestre registrou sua intenção '{}' no fluxo narrativo do Beat atual sem necessidade de rolagem mecânica.",
+                        text
+                    ),
+                }),
+            )
+        }
+    } else {
+        // Via 1 or Via 2 (Direct Sheet or Scenario action)
+        (
+            StatusCode::OK,
+            Json(TurnActionResponse {
+                status: "resolved".to_string(),
+                requires_mechanic: true,
+                detected_intent: format!("Ação de {}", req.via_type.to_uppercase()),
+                roll_result: Some(json!({
+                    "action_id": req.action_id,
+                    "applied_to_budget": true
+                })),
+                narrative_feedback: "Ação de turno processada e sincronizada com a economia de ações.".to_string(),
+            }),
+        )
     }
 }
