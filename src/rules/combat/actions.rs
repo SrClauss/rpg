@@ -1,7 +1,3 @@
-use crate::dice::DiceMode;
-use crate::rules::character::attributes::Ability;
-use crate::rules::character::entity::Entity;
-use crate::rules::character::skills::Skill;
 use crate::rules::checks::{roll_contest, CheckResult, ContestResult};
 use serde::{Deserialize, Serialize};
 
@@ -50,7 +46,7 @@ pub fn resolve_shove(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dice::Dice;
+    use crate::dice::{Dice, DiceMode};
 
     #[test]
     fn test_grapple_resolution() {

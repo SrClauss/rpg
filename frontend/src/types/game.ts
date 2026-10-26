@@ -37,6 +37,7 @@ export interface ContextualScenarioOption {
     dcEstimate?: number;
   };
   tacticalBenefit: string;
+  consumed?: boolean;
 }
 
 export interface FreeformTextActionSubmission {

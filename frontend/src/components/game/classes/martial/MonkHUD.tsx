@@ -6,9 +6,16 @@ import { Zap, Shield, Wind, Sparkles } from 'lucide-react';
 interface MonkHUDProps {
   character: CharacterSheet;
   onSpendKi?: (amount: number, ability: string) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const MonkHUD: FC<MonkHUDProps> = ({ character, onSpendKi }) => {
+export const MonkHUD: FC<MonkHUDProps> = ({
+  character,
+  onSpendKi,
+  onConsumeAction,
+  onNotify,
+}) => {
   const totalKi = Math.max(1, character.level);
   const [kiUsed, setKiUsed] = useState<number>(0);
 
@@ -17,17 +24,17 @@ export const MonkHUD: FC<MonkHUDProps> = ({ character, onSpendKi }) => {
 
   const spendKi = (amount: number, abilityName: string) => {
     if (kiRemaining < amount) {
-      alert(`Pontos de Ki insuficientes! Você precisa de ${amount} ponto(s) de Ki.`);
+      onNotify?.(`Pontos de Ki insuficientes! Você precisa de ${amount} ponto(s) de Ki.`, 'warning');
       return;
     }
     setKiUsed((k) => k + amount);
     onSpendKi?.(amount, abilityName);
-    alert(`${abilityName} ativado! Gastou ${amount} Ponto(s) de Ki.`);
+    onConsumeAction?.('bonus_action', `${abilityName} (${amount} Ki)`);
   };
 
   const handleRestKi = () => {
     setKiUsed(0);
-    alert('Descanso concluído! Todos os Pontos de Ki foram recuperados.');
+    onNotify?.('Descanso concluído! Todos os Pontos de Ki foram recuperados.', 'success');
   };
 
   return (

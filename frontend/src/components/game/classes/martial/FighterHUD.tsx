@@ -7,12 +7,16 @@ interface FighterHUDProps {
   character: CharacterSheet;
   onHealSecondWind?: (amount: number) => void;
   onGrantExtraAction?: () => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
 export const FighterHUD: FC<FighterHUDProps> = ({
   character,
   onHealSecondWind,
   onGrantExtraAction,
+  onConsumeAction,
+  onNotify,
 }) => {
   const [secondWindUsed, setSecondWindUsed] = useState<boolean>(false);
   const [actionSurgeUsed, setActionSurgeUsed] = useState<boolean>(false);
@@ -27,21 +31,27 @@ export const FighterHUD: FC<FighterHUDProps> = ({
     const healAmount = roll + character.level;
     setSecondWindUsed(true);
     onHealSecondWind?.(healAmount);
-    alert(`Retomar o Fôlego ativado! Recuperou ${healAmount} PV (1d10[${roll}] + ${character.level}).`);
+    onConsumeAction?.(
+      'bonus_action',
+      `Retomar o Fôlego (+${healAmount} PV: 1d10[${roll}] + Nv.${character.level})`
+    );
   };
 
   const handleUseActionSurge = () => {
     if (actionSurgeUsed) return;
     setActionSurgeUsed(true);
     onGrantExtraAction?.();
-    alert('Surto de Ação ativado! Você ganhou uma Ação adicional neste turno!');
+    onNotify?.('Surto de Ação ativado! Você ganhou uma Ação adicional neste turno!', 'success');
   };
 
   const handleSpendSuperiority = () => {
     if (superiorityDice <= 0) return;
     const roll = Math.floor(Math.random() * 8) + 1;
     setSuperiorityDice((d) => d - 1);
-    alert(`Dado de Superioridade gasto! Rolou ${roll} (d8) para adicionar à manobra!`);
+    onConsumeAction?.(
+      'free',
+      `Dado de Superioridade gasto (+${roll} d8 na manobra)`
+    );
   };
 
   return (

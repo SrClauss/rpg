@@ -9,6 +9,7 @@ import {
   Sparkles,
   Plus,
   Minus,
+  Package,
 } from 'lucide-react';
 
 interface VitalsAndAttributesPanelProps {
@@ -74,6 +75,8 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: '4px',
+              gap: '4px',
+              flexWrap: 'wrap',
             }}
           >
             <span
@@ -88,7 +91,26 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
             >
               <Heart size={14} /> HP VITAL
             </span>
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              <button
+                onClick={() => onUpdateHp(-5)}
+                title="Dano -5"
+                style={{
+                  padding: '0 4px',
+                  height: '20px',
+                  borderRadius: '4px',
+                  backgroundColor: '#261b1e',
+                  color: 'var(--accent-crimson)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                -5
+              </button>
               <button
                 onClick={() => onUpdateHp(-1)}
                 title="Dano -1"
@@ -101,9 +123,10 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
               >
-                <Minus size={12} />
+                <Minus size={11} />
               </button>
               <button
                 onClick={() => onUpdateHp(1)}
@@ -117,9 +140,29 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
               >
-                <Plus size={12} />
+                <Plus size={11} />
+              </button>
+              <button
+                onClick={() => onUpdateHp(5)}
+                title="Cura +5"
+                style={{
+                  padding: '0 4px',
+                  height: '20px',
+                  borderRadius: '4px',
+                  backgroundColor: '#1b2621',
+                  color: 'var(--accent-emerald)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                +5
               </button>
             </div>
           </div>
@@ -293,7 +336,7 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
           ).map((ability) => {
             const score = character.abilities[ability];
             const mod = calculateAbilityModifier(score);
-            const isProficientSave = character.savingThrowProficiencies.includes(ability);
+            const isProficientSave = (character.savingThrowProficiencies || []).includes(ability);
             const saveBonus = isProficientSave ? mod + character.proficiencyBonus : mod;
 
             return (
@@ -390,7 +433,7 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
           </span>
         </div>
 
-        {character.spellSlots.pactMagic ? (
+        {character.spellSlots?.pactMagic ? (
           /* Warlock Pact Magic Display */
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '12px', color: '#fff', fontWeight: 600 }}>
@@ -402,7 +445,7 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
                 return (
                   <button
                     key={i}
-                    onClick={() => onToggleSpellSlot(character.spellSlots.pactMagic?.slotLevel || 1, true)}
+                    onClick={() => onToggleSpellSlot(character.spellSlots?.pactMagic?.slotLevel || 1, true)}
                     style={{
                       width: '24px',
                       height: '24px',
@@ -427,7 +470,7 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
               ({character.spellSlots.pactMagic.total - character.spellSlots.pactMagic.used} restantes)
             </span>
           </div>
-        ) : Object.keys(character.spellSlots.levels).length > 0 &&
+        ) : character.spellSlots?.levels && Object.keys(character.spellSlots.levels).length > 0 &&
           Object.values(character.spellSlots.levels).some((l) => l.total > 0) ? (
           /* Standard Spellcaster Display */
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -482,6 +525,82 @@ export const VitalsAndAttributesPanel: FC<VitalsAndAttributesPanelProps> = ({
         ) : (
           <div style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
             Classe Marcial sem espaços de magia nativos (Usa recursos marciais como Fúria, Ki, Surto de Ação ou Superioridade).
+          </div>
+        )}
+      </div>
+
+      {/* Inventário & Saques Coletados */}
+      <div
+        style={{
+          backgroundColor: '#101318',
+          border: '1px solid var(--border-color)',
+          borderRadius: '8px',
+          padding: '12px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: 'var(--accent-gold)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Package size={14} /> INVENTÁRIO &amp; ITENS COLETADOS ({character.inventory?.length || 0})
+          </span>
+        </div>
+
+        {character.inventory && character.inventory.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {character.inventory.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: item.isEquipped ? 'rgba(234, 179, 8, 0.12)' : '#161922',
+                  border: item.isEquipped ? '1px solid rgba(234, 179, 8, 0.45)' : '1px solid #232936',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11.5px',
+                  color: item.isEquipped ? '#fde047' : '#e2e8f0',
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>{item.name}</span>
+                {item.quantity > 1 && (
+                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>x{item.quantity}</span>
+                )}
+                {item.isEquipped && (
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      backgroundColor: 'rgba(234, 179, 8, 0.25)',
+                      color: '#facc15',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    EQUIPADO
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
+            Mochila vazia. Colete itens na Cena Viva para adicioná-los ao seu inventário.
           </div>
         )}
       </div>

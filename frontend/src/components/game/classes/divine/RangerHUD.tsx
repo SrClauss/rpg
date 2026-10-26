@@ -5,9 +5,15 @@ import { Compass, Crosshair, Target } from 'lucide-react';
 
 interface RangerHUDProps {
   character: CharacterSheet;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const RangerHUD: FC<RangerHUDProps> = ({ character }) => {
+export const RangerHUD: FC<RangerHUDProps> = ({
+  character,
+  onConsumeAction,
+  onNotify,
+}) => {
   const [huntersMarkActive, setHuntersMarkActive] = useState<boolean>(false);
 
   const favoredEnemies = character.classResources.ranger?.favoredEnemies || [
@@ -22,7 +28,9 @@ export const RangerHUD: FC<RangerHUDProps> = ({ character }) => {
     const next = !huntersMarkActive;
     setHuntersMarkActive(next);
     if (next) {
-      alert('Marca do Caçador fixada no alvo! Todos os seus acertos contra ele causam +1d6 de dano e você tem vantagem para rastreá-lo.');
+      onConsumeAction?.('bonus_action', 'Marca do Caçador (+1d6 dano nos acertos)');
+    } else {
+      onNotify?.('Marca do Caçador removida.', 'info');
     }
   };
 

@@ -6,6 +6,8 @@ import { Trees, RefreshCw, PawPrint } from 'lucide-react';
 
 interface DruidHUDProps {
   character: CharacterSheet;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
 interface BeastForm {
@@ -48,7 +50,11 @@ const BEAST_OPTIONS: BeastForm[] = [
   },
 ];
 
-export const DruidHUD: FC<DruidHUDProps> = ({ character }) => {
+export const DruidHUD: FC<DruidHUDProps> = ({
+  character,
+  onConsumeAction,
+  onNotify,
+}) => {
   const [wildShapeUsed, setWildShapeUsed] = useState<number>(0);
   const [currentBeast, setCurrentBeast] = useState<BeastForm | null>(null);
   const [beastHpCurrent, setBeastHpCurrent] = useState<number>(0);
@@ -59,7 +65,7 @@ export const DruidHUD: FC<DruidHUDProps> = ({ character }) => {
 
   const handleTransform = (beast: BeastForm) => {
     if (!currentBeast && wildShapeUsed >= totalWildShape) {
-      alert('Você esgotou os 2 usos de Forma Selvagem! Descanse para recarregar.');
+      onNotify?.('Você esgotou os 2 usos de Forma Selvagem! Descanse para recarregar.', 'warning');
       return;
     }
     if (!currentBeast) {
@@ -67,12 +73,15 @@ export const DruidHUD: FC<DruidHUDProps> = ({ character }) => {
     }
     setCurrentBeast(beast);
     setBeastHpCurrent(beast.hp);
-    alert(`Transmutação Druídica! Você assumiu o corpo de um ${beast.name} (+${beast.hp} PV temporários de besta)!`);
+    onConsumeAction?.(
+      'action',
+      `Forma Selvagem: ${beast.name} (+${beast.hp} PV de besta)`
+    );
   };
 
   const handleRevert = () => {
     setCurrentBeast(null);
-    alert('Retornou à sua forma humanoide original.');
+    onConsumeAction?.('bonus_action', 'Reverteu Forma Selvagem para humanoide');
   };
 
   return (

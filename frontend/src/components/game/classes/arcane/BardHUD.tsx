@@ -6,9 +6,17 @@ import { Music, HeartHandshake, Mic2 } from 'lucide-react';
 
 interface BardHUDProps {
   character: CharacterSheet;
+  onHeal?: (amount: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const BardHUD: FC<BardHUDProps> = ({ character }) => {
+export const BardHUD: FC<BardHUDProps> = ({
+  character,
+  onHeal,
+  onConsumeAction,
+  onNotify,
+}) => {
   const chaMod = calculateAbilityModifier(character.abilities.charisma);
   const totalInspiration = Math.max(1, chaMod);
 
@@ -18,15 +26,23 @@ export const BardHUD: FC<BardHUDProps> = ({ character }) => {
 
   const handleInspireAlly = () => {
     if (inspirationRemaining <= 0) {
-      alert('Você esgotou seus dados de Inspiração de Bardo! Descanse para recuperar.');
+      onNotify?.('Você esgotou seus dados de Inspiração de Bardo! Descanse para recuperar.', 'warning');
       return;
     }
     setInspirationUsed((u) => u + 1);
-    alert(`Inspiração de Bardo concedida! Um aliado a até 60ft ganhou um dado de +1${inspirationDie} para somar a um teste de atributo, ataque ou salvaguarda nos próximos 10 minutos!`);
+    onConsumeAction?.(
+      'bonus_action',
+      `Inspiração de Bardo (+1${inspirationDie} concedido ao aliado)`
+    );
   };
 
   const handleSongOfRest = () => {
-    alert(`Canção de Descanso tocada! Todos os aliados que gastarem dados de vida no descanso curto recuperam +1d6 pontos de vida adicionais.`);
+    const roll = Math.floor(Math.random() * 6) + 1;
+    onHeal?.(roll);
+    onNotify?.(
+      `Canção de Descanso tocada! Recuperou +${roll} (1d6) PV adicionais no descanso curto.`,
+      'success'
+    );
   };
 
   return (

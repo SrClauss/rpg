@@ -53,6 +53,7 @@ pub enum Condition {
     Diseased,
     Madness,
     Berserk,
+    Surprised,
 }
 
 impl Condition {

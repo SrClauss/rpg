@@ -1,42 +1,48 @@
-# Plano de Implementacao — Frontend: Criacao de Personagens, 12 Telas de Classe e Interacao Turno a Turno
+# Plano de Implementação — Motor de Campanha Procedural, Modo Offline (Hot-Seat), Chat da Party, Modal de Auditoria e Persistência de Premissas/Campanhas
 
 ## Objetivo
-Construir o frontend do RPG D&D 5e contendo o fluxo inicial de Criação de Personagens, **12 telas de jogo exclusivas** (uma para cada classe original do D&D 5e) exibindo todos os atributos, vida, recursos de classe e espaços de magia usados/disponíveis, integradas ao painel de comunicação com o mundo e consulta de possibilidades turno a turno através das 3 vias (Possibilidades da Ficha, Possibilidades Contextuais do Cenário e Interação Textual Livre avaliada pela IA).
+Expandir a arquitetura do RPG D&D 5e unindo o modo multiplayer via WebSockets (com Chat da Party em tempo real) a um **Modo Offline Local (Hot-Seat)** para jogar na mesma máquina e facilitar testes rápidos. Incluir um **Modal de Auditoria** (botão fixo no canto inferior esquerdo) para inspecionar personagens, entidades do mundo e o esqueleto/crônica da história, além de **Exportação/Importação de Premissas (JSON / Banco)** e **Save/Resume Externo de Campanhas**.
 
 ---
 
-## Checklist de Subproblemas
+## Diretrizes de Execução
+- **Liberdade Total:** O agente tem total autonomia para decidir como organizar o código, escolher arquiteturas internas, executar quantas tarefas quiser por turno e utilizar subagentes conforme achar necessário.
+- **Regras de Processo Descartadas:** Não há restrição de 1 tarefa por turno, tags ou aprovações intermediárias. O agente pode iterar livremente até a conclusão.
+- **Instruções Diretas para Modelos Menores:** Cada tarefa abaixo possui escopo claro, arquivos exatos e entradas/saídas bem definidas para execução simples e sem ambiguidade.
 
-### Fase 1: Fundacao e Criacao de Personagens
-- [x] **T1** — **Fundação do Projeto Frontend e Contratos de Dados (`frontend/`):** Configurar o projeto web (React + TypeScript + Vite) com os contratos de tipos espelhando o motor Rust (Atributos, Modificadores, Perícias, HP, CA, Espaços de Magia usados/totais, Recursos de Classe, Economia de Ações do Turno e Estado do Mundo/Beat).
-- [x] **T2** — **Fluxo de Criação de Personagens:** Implementar a tela passo a passo de criação de personagem (Nome, Raça, Antecedente, alocação de Atributos `STR/DEX/CON/INT/WIS/CHA` com cálculo em tempo real de modificadores/CA/HP, Perícias, Equipamento e seleção das 12 Classes Originais), redirecionando ao final para a tela específica da classe escolhida.
+---
 
-### Fase 2: Nucleo de Jogo e Triade de Interacao Turno a Turno
-- [x] **T3** — **Motor de Tela de Jogo Base & Console de Turno (3 Vias):** Implementar os módulos fundamentais presentes nas 12 telas de classe:
-  - Painel de Atributos, Salvaguardas, Perícias e Status Vitais (`HP` atual/máx/temp, `CA`, Iniciativa, Deslocamento, Condições, Salvaguardas de Morte).
-  - Rastreador interativo de Espaços de Magia (*Spell Slots* usados vs. disponíveis do 1º ao 9º círculo).
-  - Visão de Mundo (Narrativa de *Beats* + Grid Tático de Combate).
-  - Consultor de Possibilidades Turno a Turno com orçamento de `Ação`, `Ação Bônus`, `Movimento` e `Reação` operando nas **3 Vias**:
-    1. *Via 1:* Possibilidades Mecânicas da Ficha filtradas pelos recursos/slots ativos.
-    2. *Via 2:* Possibilidades Contextuais do Cenário (testes e interações com objetos/NPCs da cena).
-    3. *Via 3:* Interação Textual Livre (enviada para avaliação da IA sobre uso ou não das mecânicas do jogo).
+## Fase 1 — Concluída (Base do Motor e Cena Viva)
+- [x] **T1 a T10 — Motor Base, Esqueleto Oculto, Cena Viva, Entidades e Lobby Inicial.**
 
-### Fase 3: As 12 Telas Exclusivas por Classe Original
-- [x] **T4** — **Telas das Classes Marciais (`Bárbaro`, `Guerreiro`, `Ladino`, `Monge`):**
-  - *Bárbaro:* HUD de *Fúria* (ativa/inativa, usos gastos, bônus de dano), *Defesa Sem Armadura* (`10 + DEX + CON`), *Ataque Descuidado* e *Crítico Brutal*.
-  - *Guerreiro:* HUD de *Estilo de Combate*, *Retomar o Fôlego*, *Surto de Ação*, *Indomável* e Manobras/Dados de Superioridade.
-  - *Ladino:* HUD de *Ataque Furtivo* (dados escaláveis e validação de vantagem/aliado adjacente), atalhos de *Ação Ardilosa* e *Especializações (Expertise)*.
-  - *Monge:* HUD de *Pontos de Ki* (usados/restantes), atalhos de Ki (*Rajada de Golpes*, *Defesa Paciente*, *Passo do Vento*), dado de *Artes Marciais* e *Defesa Sem Armadura* (`10 + DEX + WIS`).
-- [x] **T5** — **Telas dos Conjuradores Divinos e Naturais (`Clérigo`, `Druida`, `Paladino`, `Patrulheiro`):**
-  - *Clérigo:* HUD de *Canalizar Divindade* (usos e efeitos), *Magias de Domínio* sempre preparadas, gaveta de *Magias Preparadas* (`WIS + nível`) e *Espaços de Magia*.
-  - *Druida:* HUD de *Forma Selvagem (Wild Shape)* com sobreposição de HP/atributos da besta assumida, *Magias Preparadas* (`WIS + nível`) e *Espaços de Magia*.
-  - *Paladino:* HUD com pool numérico de *Cura pelas Mãos* (`nível x 5` pontos gastos/restantes), *Sentido Divino*, gatilho de *Destruição Divina (Divine Smite)* por slot e *Espaços de Magia* (1º ao 5º).
-  - *Patrulheiro:* HUD de *Inimigo Favorito*, *Explorador Natural*, *Estilo de Combate*, controle de *Marca do Caçador* e *Espaços de Magia* (1º ao 5º).
-- [x] **T6** — **Telas dos Conjuradores Arcanos e de Pacto (`Mago`, `Feiticeiro`, `Bruxo`, `Bardo`):**
-  - *Mago:* HUD dividido entre *Grimório Completo* (magias no livro e rituais) vs. *Magias Preparadas* (`INT + nível`), *Recuperação Arcana* e *Espaços de Magia* (1º ao 9º).
-  - *Feiticeiro:* HUD de *Pontos de Feitiçaria* (usados/restantes), conversor *Pontos ↔ Espaços de Magia*, seletores de *Metamagia* acoplados à conjuração e *Espaços de Magia*.
-  - *Bruxo:* HUD exclusivo de *Magia de Pacto* (slots de nível único recarregáveis em descanso curto), *Invocações Místicas* ativas, *Dádiva do Pacto* e *Patrono*.
-  - *Bardo:* HUD de dados de *Inspiração de Bardo* (usados/restantes), *Canção de Descanso*, *Aptidão (Expertise)*, Magias Conhecidas e *Espaços de Magia*.
+---
 
-### Fase 4: Integracao com o Servidor Rust e Arbitragem da IA
-- [x] **T7** — **Integração API Backend (`Axum`) + Frontend:** Expor endpoints HTTP no backend em Rust para criação de personagem, sincronização do estado de turno (`CampaignState`) e processamento das 3 vias de ação no turno (conectando a entrada textual livre ao orquestrador IA + resolvedor mecânico determinístico).
+## Fase 2 — Novas Tarefas (Chat, Offline Hot-Seat, Auditoria e Saves Externos)
+
+- [x] **T11 — Biblioteca e Exportação/Importação de Premissas (`src/bin/server.rs`, `SessionLobby.tsx` e `api.ts`):**
+  - **Backend:** Criar rotas `GET /api/premises` e `POST /api/premises` que salvam e listam premissas reutilizáveis em `data/premises/<id>.json` (ou coleção MongoDB se `MONGODB_URI` estiver presente), contendo `title`, `premise`, `literary_style`, `ai_creative_freedom` e `custom_monsters`.
+  - **Frontend:** No `SessionLobby.tsx`, adicionar botões *"💾 Salvar Premissa (JSON/DB)"* e *"📂 Carregar Premissa (.json ou Salvas)"*, permitindo baixar o arquivo `.json` da premissa para compartilhar com outras pessoas ou carregar um arquivo `.json` do disco.
+
+- [x] **T12 — Gravação Externa e Retomada (Resume) de Campanhas (`src/bin/server.rs`, `SessionLobby.tsx` e `api.ts`):**
+  - **Backend:** Criar rotas:
+    - `GET /api/campaigns/saved`: Lista todas as campanhas salvas em `data/campaigns/` com resumo (ID, código, ato atual, premissa, data e jogadores).
+    - `GET /api/campaign/{id}/export`: Retorna um pacote JSON completo (`CampaignBackupBundle`) contendo `manifest.json`, `active_scene.json`, `chronicle_log.jsonl` e todas as fichas de `entities/players` e `entities/world`.
+    - `POST /api/campaign/import`: Recebe um `CampaignBackupBundle` (arquivo `.json` externo), restaura a pasta em `data/campaigns/<id>/`, registra na memória do servidor e permite retomar exatamente de onde parou.
+  - **Frontend:** Adicionar aba/seção *"3. Retomar / Importar Campanha"* no `SessionLobby.tsx` para continuar campanhas salvas ou subir um arquivo `.json` de backup externo.
+
+- [x] **T13 — Modo Offline Local / Hot-Seat no Mesma Máquina (`SessionLobby.tsx`, `App.tsx` e `BaseGameHUD.tsx`):**
+  - **Fluxo:** No `SessionLobby.tsx`, permitir ativar a chave *"🖥️ Modo Offline / Local (Mesmo PC)"* e definir de 1 a 4 jogadores locais.
+  - **Criação:** Permitir criar de 1 a 4 heróis em sequência (ou usar um botão *"⚡ Gerar Party de Teste Rápida"* para testes imediatos).
+  - **Troca de Turno Local (Hot-Seat):** No `BaseGameHUD.tsx`, exibir no topo uma barra de alternância rápida entre os heróis locais (`[Herói 1] [Herói 2] ...`) e sincronizar automaticamente o cockpit com o jogador ativo da fila de iniciativa da Cena Viva.
+
+- [x] **T14 — Chat da Party em Tempo Real no Canto da Tela (`src/bin/server.rs` e `frontend/src/components/game/PartyChatWidget.tsx`):**
+  - **Backend:** No handler WebSocket (`ws_handler` em `src/bin/server.rs`) e rota `POST /api/campaign/{id}/chat`, receber mensagens de chat (`{ sender_id, sender_name, text, timestamp }`) e fazer broadcast imediato de `CHAT_MESSAGE` para todos na sala.
+  - **Frontend:** Criar componente retrátil `PartyChatWidget.tsx` fixado no **canto inferior direito** do HUD, exibindo mensagens da party em tempo real, contador de mensagens não lidas e suporte tanto a salas WebSocket quanto ao modo local.
+
+- [x] **T15 — Botão e Modal de Auditoria Completa (`src/bin/server.rs` e `frontend/src/components/game/AuditModal.tsx`):**
+  - **Backend:** Criar rota `GET /api/campaign/{id}/audit` que retorna o pacote completo de inspeção: `manifest` (incluindo o `hidden_skeleton` completo, atos, marcos e `homebrew_bosses`), lista completa de `players`, lista completa de `world_entities` (com atributos, flags e ponteiros de memória), `active_scene` e todas as entradas de `chronicle`.
+  - **Frontend:** Criar um botão discreto e fixo no **canto inferior esquerdo** (`🔍 Auditoria`) visível em qualquer tela do jogo. Ao clicar, abre o `AuditModal.tsx` dividido em 4 abas claras:
+    1. **Heróis Criados:** Fichas completas, atributos, recursos de classe e JSON bruto.
+    2. **Entidades & Bosses:** Monstros homebrew, NPCs, HP/CA atual e impactos de memória.
+    3. **Esqueleto Oculto & Premissa:** Visualização dos atos planejados pela IA, eventos autônomos e diretrizes criativas.
+    4. **Livro da Crônica & Cena Viva:** Log completo de eventos, rolagens e estado da cena ativa.

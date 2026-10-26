@@ -18,6 +18,57 @@ impl DeepSeekClient {
         }
     }
 
+    /// Atua como Linter Literário: emite parecer crítico e diretrizes de reescrita
+    pub async fn critique_text(&self, text_to_review: &str, guidelines: &str) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/chat/completions", self.base_url);
+
+        let system_msg = "Você é um editor literário implacável e árbitro de coerência dramática. \
+                          Sua missão é ler o rascunho de uma cena de RPG, identificar e podar impiedosamente: \
+                          clichês óbvios, explicações didáticas artificiais (infodump), inconsistências psicológicas \
+                          e ritmos truncados. Forneça uma análise concisa (entre 150 e 250 palavras) com instruções \
+                          claras para que o escritor reescreva a cena em seu potencial máximo de maturidade, \
+                          verossimilhança e densidade sensorial.";
+
+        let user_content = format!(
+            "DIRETRIZES DA CENA:\n{}\n\n---\nRASCUNHO PARA REVISÃO:\n{}",
+            guidelines, text_to_review
+        );
+
+        let body = json!({
+            "model": "deepseek-chat",
+            "messages": [
+                { "role": "system", "content": system_msg },
+                { "role": "user", "content": user_content }
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
+        });
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = response.status();
+        let response_text = response.text().await?;
+
+        if !status.is_success() {
+            return Err(format!("Erro na API DeepSeek (Status {}): {}", status, response_text).into());
+        }
+
+        let res_json: Value = serde_json::from_str(&response_text)?;
+        let critique = res_json["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+
+        Ok(critique)
+    }
+
     /// Retorna o schema JSON da ferramenta `generate_battle_grid`
     fn get_grid_tool_schema() -> Value {
         json!({

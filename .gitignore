@@ -3,3 +3,9 @@
 /maps/cache/
 *.png
 *.json
+.venv/
+logs/
+scratch/
+data/campaigns/
+data/users/
+data/premises/

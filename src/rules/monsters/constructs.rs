@@ -5,7 +5,7 @@ use crate::rules::character::entity::Entity;
 use crate::rules::character::race::{Human, RaceVariant};
 use crate::rules::equipment::weapons::{create_dagger, DamageType};
 use crate::rules::monsters::monster::{
-    ActionType, CreatureSize, CreatureType, Monster, MonsterAction, MonsterSense, UsageLimit,
+    ActionType, CreatureSize, CreatureType, Monster, MonsterAction, MonsterSense,
 };
 
 fn create_construct_entity(name: &str, str_: u8, dex: u8, con: u8, int_: u8, wis: u8, cha: u8) -> Entity {

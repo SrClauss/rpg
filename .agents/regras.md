@@ -65,5 +65,62 @@ Dentro da tela da sua classe, o jogador acompanha o mundo (narrativa do *Beat* a
      - **Ação Puramente Narrativa/Social:** Segue para o pipeline narrativo sem exigir rolagem se não houver risco ou oposição mecânica.
      - **Ação com Impacto Mecânico (`#regras`):** A IA aciona o Motor Determinístico em Rust (ex: exigindo um teste de habilidade, salvaguarda, ataque improvisado ou gasto de recurso/slot), o Rust resolve a matemática e o estado (`CampaignState`), e o resultado alimenta a narração final do turno.
 
+---
 
+## 6. Fluxo Macro da Partida, Esqueleto Oculto, Memória Indexada e "Cena Viva"
+
+### 6.1. Criação da Sessão pelo Guest, Lobby Multiplayer e Esqueleto Narrativo Oculto
+- **Papel da IA (100% GM) e Composição da Mesa:** A IA atua exclusivamente como Mestre de Jogo (GM). O **Guest** (criador da sessão) é um jogador com seu próprio personagem e pode convidar de **1 a 3 amigos** via WebSockets, compondo uma *party* de **1 a 4 jogadores** (`Guest + até 3 convidados`).
+- **Premissa e Estilo Literário:** Na criação da sessão, o Guest fornece apenas a **Premissa da História** e o **Estilo/Tom em que ela será contada** (não há inserção manual de esqueleto pelo usuário).
+- **Esqueleto Narrativo Oculto no Servidor:**
+  - A partir da Premissa e do Estilo, a IA gera proceduralmente no servidor o **Esqueleto Narrativo**, que permanece **100% oculto** para todos os jogadores (incluindo o Guest, evitando *spoilers*).
+  - O Esqueleto contém:
+    1. Os **eventos autônomos do mundo** (o que acontecerá nos bastidores independentemente das ações do grupo);
+    2. O **rumo esperado da história** (capítulos/arcos planejados).
+  - **Corrupção e Recálculo do Esqueleto:** A IA conduz a campanha seguindo o Esqueleto existente. Caso as ações dos jogadores fujam drasticamente do esperado e "corrompam" a linha planejada, a IA possui total liberdade para recalcular e reescrever o Esqueleto Narrativo daquele ponto em diante.
+
+### 6.2. O "Livro da Crônica" (Log Geral) vs. Memória Viva de Entidades (JSON + Ponteiros)
+- **O Livro (Log Geral Rastreável):** Registra de forma contínua e cronológica toda a prosa literária consolidada e todas as interações reais da campanha.
+- **Fichas JSON Dinâmicas por Entidade (Personagens/NPCs, Lugares e Objetos):**
+  - Sempre que uma entidade relevante surge ou é mencionada na campanha, o sistema cria/atualiza sua estrutura JSON própria **fora do log contínuo**, evitando que a IA precise reprocessar todo o histórico toda vez que a entidade reaparecer.
+  - **Mutação Psicológica/Estrutural + Ponteiro para o Log Geral:**
+    - Quando um evento marcante afeta uma entidade (ex: *Capítulo 1: NPC João vê a esposa ser morta por lobisomens*; mais tarde: *João é traído pelo Ladino do grupo*), a IA calcula o impacto desse evento (trauma, rancor, mudança de lealdade, estado físico) e grava esse estado diretamente no JSON de `João`.
+    - **Consulta Profunda sob Demanda:** Cada evento registrado no JSON da entidade guarda também a **referência/ID do evento no Log Geral (Livro)**. Assim, no uso comum, a IA lê apenas o JSON enxuto da entidade; mas, se precisar de detalhes granulares do que ocorreu naquele episódio passado (ex: falas exatas ou circunstâncias da traição), a IA consulta pontualmente aquele trecho no Log Geral.
+
+### 6.3. Alternância de Agentes e o Conceito de "Cena Viva" (`Living Scene`) Regida pelo D&D 5e
+A campanha alterna entre dois modos de operação de IA:
+1. **Modo Crônica Literária (Escritor + Revisor + Reescrita):**
+   - Conduz o avanço macro da história pelo Esqueleto Narrativo e escreve a prosa polida no **Livro** para todos os jogadores acompanharem.
+2. **Modo "Cena Viva" (`Living Scene` — Agente de Ambiente + Motor D&D 5e em Rust):**
+   - Quando a narrativa atinge um ponto de ação, exploração ou interação direta do grupo (ex: chegada a uma cidade, diálogo tenso ou combate), a IA Literária pausa e entra em ação o **Agente de Ambiente** (IA rápida, direta e **sem etapa de revisão**).
+   - **Soberania das Regras do D&D 5e na Cena Viva:**
+     - **Toda e qualquer interação ou combate dentro da Cena Viva é decidida pelas regras determinísticas do D&D 5e no motor Rust.**
+     - **Interações Sociais e de Exploração:** Se um jogador tenta convencer, intimidar ou enganar um NPC (como o `João`), investigar uma pista ou forçar uma passagem, o Agente de Ambiente consulta o JSON do NPC/Cenário (ex: se `João` já foi traído pelo Ladino, o JSON dele impõe **Desvantagem** ou aumenta a **CD** contra o Ladino) e aciona o motor Rust para rolar o teste de perícia/atributo real (`d20 + modificador + proficiência vs. CD` ou teste resistido). O NPC só reage de acordo com o resultado matemático dos dados.
+     - **Combate e Recursos:** Segue estritamente a fila de Iniciativa (`d20 + DEX`), economia de turno (`Ação`, `Ação Bônus`, `Movimento`, `Reação`), Classe de Armadura (`CA`), Salvaguardas e gasto real de *Espaços de Magia* e recursos das 12 classes na ficha de cada jogador e dos inimigos.
+     - **Ordem de Turnos Multiplayer (1 a 4 Jogadores):** Mesmo fora de combate, a Cena Viva opera em rodadas organizadas para que todos os 4 jogadores conectados via WebSocket tenham sua vez de agir/falar usando suas 3 Vias, seguidos pela reação empática e tática do Agente de Ambiente.
+   - **Objetivos Claros da Cena Viva (Prevenção de Loop Infinito):**
+     - Ao iniciar uma **Cena Viva**, a IA define e entrega ao grupo os **Objetivos / Marcos de Resolução** daquele estágio (o que precisa acontecer ou ser decidido para aquela etapa se cumprir).
+     - O próprio **Agente de Ambiente** monitora esses objetivos e detecta automaticamente o fim da Cena Viva quando:
+       - O grupo atinge os objetivos/ações esperados da cena; **OU**
+       - O grupo decide implicitamente abandonar/sair do local.
+3. **Fechamento da Cena Viva e Retorno ao Livro:**
+   - Encerrada a **Cena Viva**, o sistema:
+     1. Gera um **resumo estruturado** de tudo o que ocorreu durante a Cena Viva;
+     2. Calcula o **impacto** nos JSONs das entidades envolvidas e avalia se o **Esqueleto Narrativo** foi mantido ou corrompido;
+     3. Aciona a função da **Dobradinha Literária (Escrita $\rightarrow$ Revisão $\rightarrow$ Reescrita)** para transformar o resumo da Cena Viva em narrativa literária definitiva no **Livro da História**, sincronizando a leitura para todos os jogadores da sala.
+
+### 6.4. Arquitetura de Gravação e Persistência de Estado por Campanha
+Cada campanha é isolada em seu próprio diretório estruturado (`data/campaigns/<campaign_id>/`) utilizando uma **arquitetura híbrida de arquivos JSON modulares + Log Append-Only (`JSONL`) indexado em memória pelo Rust**:
+1. **`manifest.json` (Sessão, Premissa e Esqueleto Oculto):**
+   - Guarda os metadados da sala, os IDs dos 1 a 4 jogadores (`Guest + até 3`), a `Premise`, o Estilo Literário e o **Esqueleto Narrativo Oculto** (incluindo seu histórico de mutações caso tenha sido corrompido).
+2. **`chronicle_log.jsonl` (O Livro Geral Rastreável — *Append-Only*):**
+   - Arquivo em formato *JSON Lines* onde cada linha é um evento imutável com `event_id` sequencial (ex: `evt_0001`, `evt_0042`), contendo o timestamp, capítulo/cena, rolagens determinísticas de D&D 5e e o texto narrativo/diálogo exato.
+   - **Por que `JSONL` com Índice de Offset em Memória (`HashMap<String, u64>`):** Como o Livro só cresce, gravar novas entradas no fim do arquivo é instantâneo ($O(1)$) e à prova de corrupção. Quando a IA precisa consultar os detalhes exatos de um trauma passado de um NPC, o servidor Rust usa o `event_id` gravado na ficha do NPC para buscar diretamente a linha exata no `chronicle_log.jsonl` em menos de 1 milissegundo, sem carregar o resto do livro na memória da IA.
+3. **`entities/players/<player_id>.json` e `entities/world/<entity_id>.json` (Fichas Vivas Isoladas):**
+   - Cada jogador (1 a 4) e cada entidade do mundo (NPCs como `joao.json`, Locais, Objetos importantes) possui seu próprio arquivo JSON individual (gravado de forma atômica via arquivo `.tmp` + `rename`).
+   - O JSON de cada entidade contém:
+     - **Bloco Mecânico D&D 5e:** Atributos, HP, CA, Perícias, Condições, Espaços de Magia usados/totais e Recursos de Classe.
+     - **Bloco de Memória e Impactos (`memory_impacts`):** Lista enxuta dos eventos que moldaram aquela entidade, contendo o impacto calculado pela IA (ex: *"Odeia lobisomens; Desconfia profundamente do Ladino do grupo (+5 na CD de Persuasão para o Ladino)"*) e o ponteiro `source_event_id` apontando para o `chronicle_log.jsonl`.
+4. **`active_scene.json` (Checkpoint da Cena Viva em Andamento):**
+   - Mantém o estado em tempo real da **Cena Viva** aberta (objetivos da cena, turno atual, orçamento de ações de cada jogador, posição no Grid e turnos já jogados na cena). Se o servidor reiniciar no meio de um combate ou diálogo, a Cena Viva retoma exatamente do turno em que parou.
 

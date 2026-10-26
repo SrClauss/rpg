@@ -7,9 +7,16 @@ import { Sword, Heart, Eye, Sparkles } from 'lucide-react';
 interface PaladinHUDProps {
   character: CharacterSheet;
   onHealLayOnHands?: (amount: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const PaladinHUD: FC<PaladinHUDProps> = ({ character, onHealLayOnHands }) => {
+export const PaladinHUD: FC<PaladinHUDProps> = ({
+  character,
+  onHealLayOnHands,
+  onConsumeAction,
+  onNotify,
+}) => {
   const maxLayOnHands = character.level * 5;
   const [layOnHandsUsed, setLayOnHandsUsed] = useState<number>(0);
   const [healInput, setHealInput] = useState<number>(5);
@@ -21,19 +28,22 @@ export const PaladinHUD: FC<PaladinHUDProps> = ({ character, onHealLayOnHands })
   const handleUseLayOnHands = () => {
     const amount = Number(healInput);
     if (amount <= 0 || amount > layOnHandsRemaining) {
-      alert(`Quantidade inválida! Você possui ${layOnHandsRemaining} pontos restantes no pool.`);
+      onNotify?.(`Quantidade inválida! Você possui ${layOnHandsRemaining} pontos restantes no pool.`, 'warning');
       return;
     }
     setLayOnHandsUsed((u) => u + amount);
     onHealLayOnHands?.(amount);
-    alert(`Cura pelas Mãos ativada! Restaurou ${amount} PV do alvo.`);
+    onConsumeAction?.('action', `Cura pelas Mãos (+${amount} PV)`);
   };
 
   const handleTriggerSmite = () => {
     const next = !smiteActive;
     setSmiteActive(next);
     if (next) {
-      alert('Destruição Divina armada! No próximo golpe bem-sucedido, gastará 1 Espaço de Magia para causar +2d8 de dano radiante (+3d8 contra mortos-vivos/infernais)!');
+      onNotify?.(
+        'Destruição Divina armada! No próximo golpe bem-sucedido, gastará 1 Espaço de Magia para causar +2d8 de dano radiante!',
+        'info'
+      );
     }
   };
 
@@ -103,7 +113,7 @@ export const PaladinHUD: FC<PaladinHUDProps> = ({ character, onHealLayOnHands })
         </div>
 
         {/* Action buttons: Lay on Hands & Divine Smite */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {/* Lay on Hands inline form */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <input
@@ -155,7 +165,12 @@ export const PaladinHUD: FC<PaladinHUDProps> = ({ character, onHealLayOnHands })
           </button>
 
           <button
-            onClick={() => alert('Sentido Divino ativado! Detectou presença espiritual num raio de 60ft sem barreiras de chumbo.')}
+            onClick={() =>
+              onConsumeAction?.(
+                'action',
+                'Sentido Divino (Detectou presença espiritual num raio de 60ft)'
+              )
+            }
             style={{
               padding: '8px 12px',
               borderRadius: '6px',

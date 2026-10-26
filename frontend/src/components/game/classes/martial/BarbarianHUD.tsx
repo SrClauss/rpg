@@ -7,12 +7,16 @@ interface BarbarianHUDProps {
   character: CharacterSheet;
   onApplyRageBonus?: (active: boolean) => void;
   onRecklessAttackToggle?: (active: boolean) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
 export const BarbarianHUD: FC<BarbarianHUDProps> = ({
   character,
   onApplyRageBonus,
   onRecklessAttackToggle,
+  onConsumeAction,
+  onNotify,
 }) => {
   const [isRaging, setIsRaging] = useState<boolean>(false);
   const [ragesUsed, setRagesUsed] = useState<number>(0);
@@ -24,15 +28,17 @@ export const BarbarianHUD: FC<BarbarianHUDProps> = ({
   const handleToggleRage = () => {
     if (!isRaging) {
       if (ragesUsed >= totalRages) {
-        alert('Você já esgotou todos os usos de Fúria hoje! Descanse para recuperar.');
+        onNotify?.('Você já esgotou todos os usos de Fúria hoje! Descanse para recuperar.', 'warning');
         return;
       }
       setIsRaging(true);
       setRagesUsed((u) => u + 1);
       onApplyRageBonus?.(true);
+      onConsumeAction?.('bonus_action', `Entrou em Fúria (+${rageBonus} dano e resistências)`);
     } else {
       setIsRaging(false);
       onApplyRageBonus?.(false);
+      onNotify?.('Fúria encerrada.', 'info');
     }
   };
 
@@ -40,6 +46,12 @@ export const BarbarianHUD: FC<BarbarianHUDProps> = ({
     const next = !recklessActive;
     setRecklessActive(next);
     onRecklessAttackToggle?.(next);
+    onNotify?.(
+      next
+        ? 'Ataque Descuidado ativado (Vantagem nos ataques corpo a corpo FOR neste turno)!'
+        : 'Ataque Descuidado desativado.',
+      'info'
+    );
   };
 
   return (

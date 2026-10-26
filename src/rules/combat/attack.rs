@@ -38,7 +38,7 @@ pub fn resolve_attack(
     affinity: DamageAffinity,
 ) -> AttackResult {
     let mut final_mode = mode;
-    let mut has_advantage_effect = defender.applied_effects.iter().any(|e| {
+    let has_advantage_effect = defender.applied_effects.iter().any(|e| {
         matches!(
             e.effect,
             crate::rules::character::active_effects::ActiveEffect::GrantsAdvantageToAttackers

@@ -5,7 +5,7 @@ use super::background::Background;
 use super::class::ClassVariant;
 use super::language::Language;
 use super::multiclass::can_multiclass_into;
-use super::race::{Race, RaceVariant, Size};
+use super::race::{RaceVariant, Size};
 use super::subclass::{Subclass, SubclassFeature};
 use crate::rules::character::active_effects::{ActiveEffect, AppliedEffect};
 use crate::rules::conditions::{Condition, Disease, Madness, MadnessType};
@@ -411,6 +411,9 @@ impl Entity {
         for cond in conditions_to_remove {
             self.remove_condition(&cond);
         }
+
+        // Fim do turno sempre cancela o efeito de Surpresa (já que ela só dura até acabar o seu 1º turno)
+        self.remove_condition(&Condition::Surprised);
     }
 
     /// Verifica se a entidade está incapacitada por qualquer condição ativa

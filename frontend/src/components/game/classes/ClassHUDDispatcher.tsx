@@ -15,39 +15,133 @@ import { BardHUD } from './arcane/BardHUD';
 
 interface ClassHUDDispatcherProps {
   character: CharacterSheet;
+  onGrantExtraAction?: () => void;
+  onHealSecondWind?: (amount: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onUpdatePreparedSpells?: (spells: string[]) => void;
+  onRestoreSpellSlots?: (levelsToRecover: number) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const ClassHUDDispatcher: FC<ClassHUDDispatcherProps> = ({ character }) => {
+export const ClassHUDDispatcher: FC<ClassHUDDispatcherProps> = ({
+  character,
+  onGrantExtraAction,
+  onHealSecondWind,
+  onConsumeAction,
+  onUpdatePreparedSpells,
+  onRestoreSpellSlots,
+  onNotify,
+}) => {
   switch (character.className) {
     // 1. Marciais & Especialistas
     case 'Barbarian':
-      return <BarbarianHUD character={character} />;
+      return (
+        <BarbarianHUD
+          character={character}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Fighter':
-      return <FighterHUD character={character} />;
+      return (
+        <FighterHUD
+          character={character}
+          onGrantExtraAction={onGrantExtraAction}
+          onHealSecondWind={onHealSecondWind}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Rogue':
-      return <RogueHUD character={character} />;
+      return (
+        <RogueHUD
+          character={character}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Monk':
-      return <MonkHUD character={character} />;
+      return (
+        <MonkHUD
+          character={character}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
 
     // 2. Conjuradores Divinos & Naturais
     case 'Cleric':
-      return <ClericHUD character={character} />;
+      return (
+        <ClericHUD
+          character={character}
+          onHeal={onHealSecondWind}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Druid':
-      return <DruidHUD character={character} />;
+      return (
+        <DruidHUD
+          character={character}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Paladin':
-      return <PaladinHUD character={character} />;
+      return (
+        <PaladinHUD
+          character={character}
+          onHealLayOnHands={onHealSecondWind}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Ranger':
-      return <RangerHUD character={character} />;
+      return (
+        <RangerHUD
+          character={character}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
 
     // 3. Conjuradores Arcanos, Pacto & Artísticos
     case 'Wizard':
-      return <WizardHUD character={character} />;
+      return (
+        <WizardHUD
+          character={character}
+          onUpdatePreparedSpells={onUpdatePreparedSpells}
+          onRestoreSpellSlots={onRestoreSpellSlots}
+          onNotify={onNotify}
+        />
+      );
     case 'Sorcerer':
-      return <SorcererHUD character={character} />;
+      return (
+        <SorcererHUD
+          character={character}
+          onRestoreSpellSlots={onRestoreSpellSlots}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Warlock':
-      return <WarlockHUD character={character} />;
+      return (
+        <WarlockHUD
+          character={character}
+          onHeal={onHealSecondWind}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
     case 'Bard':
-      return <BardHUD character={character} />;
+      return (
+        <BardHUD
+          character={character}
+          onHeal={onHealSecondWind}
+          onConsumeAction={onConsumeAction}
+          onNotify={onNotify}
+        />
+      );
 
     default:
       return null;

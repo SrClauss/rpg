@@ -1,4 +1,3 @@
-use crate::rules::character::attributes::AbilityScores;
 use crate::rules::character::entity::Entity;
 use crate::rules::conditions::Condition;
 use crate::rules::equipment::weapons::{DamageType, Weapon};

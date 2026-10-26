@@ -6,9 +6,16 @@ import { Crosshair, Wind, EyeOff, ShieldCheck } from 'lucide-react';
 interface RogueHUDProps {
   character: CharacterSheet;
   onUseCunningAction?: (actionName: string) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const RogueHUD: FC<RogueHUDProps> = ({ character, onUseCunningAction }) => {
+export const RogueHUD: FC<RogueHUDProps> = ({
+  character,
+  onUseCunningAction,
+  onConsumeAction,
+  onNotify,
+}) => {
   const [sneakAttackUsedThisTurn, setSneakAttackUsedThisTurn] = useState<boolean>(false);
   const [hasAdvantageOrAlly, setHasAdvantageOrAlly] = useState<boolean>(true);
 
@@ -20,11 +27,14 @@ export const RogueHUD: FC<RogueHUDProps> = ({ character, onUseCunningAction }) =
 
   const handleTriggerSneakAttack = () => {
     if (sneakAttackUsedThisTurn) {
-      alert('Ataque Furtivo só pode ser aplicado uma vez por turno!');
+      onNotify?.('Ataque Furtivo só pode ser aplicado uma vez por turno!', 'warning');
       return;
     }
     if (!hasAdvantageOrAlly) {
-      alert('Requisito do D&D 5e: Você precisa de Vantagem no ataque OU um aliado a 5ft do alvo!');
+      onNotify?.(
+        'Requisito do D&D 5e: Você precisa de Vantagem no ataque OU um aliado a 5ft do alvo!',
+        'warning'
+      );
       return;
     }
     let total = 0;
@@ -35,12 +45,20 @@ export const RogueHUD: FC<RogueHUDProps> = ({ character, onUseCunningAction }) =
       total += r;
     }
     setSneakAttackUsedThisTurn(true);
-    alert(`ATAQUE FURTIVO CRÍTICO! +${total} de dano perfurante (${sneakDice}d6: [${rolls.join(', ')}])`);
+    onConsumeAction?.(
+      'free',
+      `Ataque Furtivo (+${total} dano perfurante: ${sneakDice}d6 [${rolls.join(', ')}])`
+    );
   };
 
   const handleCunning = (type: 'Dash' | 'Disengage' | 'Hide') => {
     onUseCunningAction?.(type);
-    alert(`Ação Ardilosa (${type}) ativada como AÇÃO BÔNUS!`);
+    const labelMap = {
+      Dash: 'Ação Ardilosa: Disparada (+Deslocamento)',
+      Disengage: 'Ação Ardilosa: Desengajar',
+      Hide: 'Ação Ardilosa: Esconder-se',
+    };
+    onConsumeAction?.('bonus_action', labelMap[type]);
   };
 
   return (

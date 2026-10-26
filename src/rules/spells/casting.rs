@@ -3,7 +3,7 @@ use crate::rules::character::attributes::Ability;
 use crate::rules::character::entity::Entity;
 use crate::rules::checks::{roll_saving_throw, CheckResult};
 use crate::rules::combat::attack::{resolve_attack, AttackResult, DamageAffinity};
-use crate::rules::equipment::weapons::{DamageType, Weapon};
+use crate::rules::equipment::weapons::Weapon;
 use crate::rules::spells::spell::{Spell, SpellEffect};
 use crate::rules::spells::spellcaster::ActiveConcentration;
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 pub mod aberrations;
 pub mod beasts;
 pub mod celestials;

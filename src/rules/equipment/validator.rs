@@ -1,4 +1,3 @@
-use super::armor::Armor;
 use super::weapons::{Weapon, WeaponProperty};
 use crate::dice::Dice;
 use crate::rules::character::attributes::Ability;

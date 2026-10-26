@@ -3,11 +3,8 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use super::spell::{
-    create_cure_wounds, create_fire_bolt, create_fireball, Components, Spell, SpellEffect,
-    SpellSchool,
+    create_cure_wounds, create_fire_bolt, create_fireball, Spell,
 };
-use crate::rules::character::attributes::Ability;
-use crate::rules::equipment::weapons::DamageType;
 
 /// Registro Global Estático de Magias (SRD 5.1 e Homebrew)
 pub static GLOBAL_SPELLS: LazyLock<SpellRegistry> = LazyLock::new(|| {

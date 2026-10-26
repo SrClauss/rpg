@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 
 use super::feat::{Feat, FeatMechanicalEffect, FeatPrerequisites};
 use crate::rules::character::entity::Entity;
-use crate::rules::equipment::validator::{HomebrewValidator, ValidationReport};
+use crate::rules::equipment::validator::ValidationReport;
 
 /// Registro Global Estático de Talentos (SRD 5.1, 5e e Homebrew)
 pub static GLOBAL_FEATS: LazyLock<FeatRegistry> = LazyLock::new(|| {

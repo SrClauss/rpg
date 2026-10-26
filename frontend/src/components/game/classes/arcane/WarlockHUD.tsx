@@ -5,9 +5,16 @@ import { Eye, Skull, RefreshCw } from 'lucide-react';
 
 interface WarlockHUDProps {
   character: CharacterSheet;
+  onHeal?: (amount: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const WarlockHUD: FC<WarlockHUDProps> = ({ character }) => {
+export const WarlockHUD: FC<WarlockHUDProps> = ({
+  character,
+  onHeal,
+  onConsumeAction,
+}) => {
   const patron = character.classResources.warlock?.otherworldlyPatron || 'O Corruptor (The Fiend)';
   const pactBoon = character.classResources.warlock?.pactBoon || 'Tome';
   const invocations = character.classResources.warlock?.invocationsActive || [
@@ -18,9 +25,13 @@ export const WarlockHUD: FC<WarlockHUDProps> = ({ character }) => {
   const [darkOnesBlessingHp, setDarkOnesBlessingHp] = useState<number>(0);
 
   const handleDarkBlessing = () => {
-    const tempHp = 1 + Math.max(1, Math.floor((character.abilities.charisma - 10) / 2));
+    const tempHp = character.level + Math.max(1, Math.floor((character.abilities.charisma - 10) / 2));
     setDarkOnesBlessingHp(tempHp);
-    alert(`Bênção do Obscuro ativada! Ao abater um inimigo, o Patrono concedeu ${tempHp} Pontos de Vida Temporários!`);
+    onHeal?.(tempHp);
+    onConsumeAction?.(
+      'free',
+      `Bênção do Obscuro (+${tempHp} PV concedidos pelo Patrono)`
+    );
   };
 
   return (

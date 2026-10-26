@@ -4,7 +4,7 @@ use crate::rules::character::class::{ClassVariant, Fighter};
 use crate::rules::character::entity::Entity;
 use crate::rules::character::race::{Human, RaceVariant};
 use crate::rules::equipment::weapons::{
-    create_dagger, create_greatsword, create_longsword, DamageType, Weapon,
+    create_dagger, create_greatsword, create_longsword,
 };
 use crate::rules::monsters::monster::{
     ActionType, CreatureSize, CreatureType, Monster, MonsterAction,

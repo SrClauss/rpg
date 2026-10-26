@@ -6,9 +6,17 @@ import { Sun, Sparkles, BookOpen } from 'lucide-react';
 
 interface ClericHUDProps {
   character: CharacterSheet;
+  onHeal?: (amount: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const ClericHUD: FC<ClericHUDProps> = ({ character }) => {
+export const ClericHUD: FC<ClericHUDProps> = ({
+  character,
+  onHeal,
+  onConsumeAction,
+  onNotify,
+}) => {
   const [channelDivinityUsed, setChannelDivinityUsed] = useState<number>(0);
   const totalChannelDivinity = character.level >= 6 ? 2 : 1;
 
@@ -22,14 +30,22 @@ export const ClericHUD: FC<ClericHUDProps> = ({ character }) => {
 
   const handleUseChannelDivinity = (type: 'TurnUndead' | 'Domain') => {
     if (channelDivinityUsed >= totalChannelDivinity) {
-      alert('Você já usou todos os seus usos de Canalizar Divindade! Descanse para recuperar.');
+      onNotify?.('Você já usou todos os seus usos de Canalizar Divindade! Descanse para recuperar.', 'warning');
       return;
     }
     setChannelDivinityUsed((u) => u + 1);
     if (type === 'TurnUndead') {
-      alert('Expulsar Mortos-Vivos ativado! Mortos-vivos a até 30ft devem fazer Salvaguarda de SAB ou fugir por 1 minuto.');
+      onConsumeAction?.(
+        'action',
+        'Canalizar Divindade: Expulsar Mortos-Vivos (Raio 30ft)'
+      );
     } else {
-      alert(`Canalizar Divindade (${domain}: Preservar a Vida) ativado! Restaura pontos de vida para aliados feridos.`);
+      const healAmt = character.level * 5;
+      onHeal?.(healAmt);
+      onConsumeAction?.(
+        'action',
+        `Canalizar Divindade (${domain}: Preservar a Vida +${healAmt} PV)`
+      );
     }
   };
 

@@ -5,9 +5,17 @@ import { Sparkles, Zap, ArrowRightLeft } from 'lucide-react';
 
 interface SorcererHUDProps {
   character: CharacterSheet;
+  onRestoreSpellSlots?: (levelsToRecover: number) => void;
+  onConsumeAction?: (costType: 'action' | 'bonus_action' | 'reaction' | 'free', label: string) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const SorcererHUD: FC<SorcererHUDProps> = ({ character }) => {
+export const SorcererHUD: FC<SorcererHUDProps> = ({
+  character,
+  onRestoreSpellSlots,
+  onConsumeAction,
+  onNotify,
+}) => {
   const maxPoints = Math.max(2, character.level);
   const [sorceryPoints, setSorceryPoints] = useState<number>(maxPoints);
   const [activeMetamagic, setActiveMetamagic] = useState<string | null>(null);
@@ -24,24 +32,32 @@ export const SorcererHUD: FC<SorcererHUDProps> = ({ character }) => {
     if (activeMetamagic === meta.name) {
       setActiveMetamagic(null);
       setSorceryPoints((p) => Math.min(maxPoints, p + meta.cost));
+      onNotify?.(`Metamagia ${meta.name} desativada.`, 'info');
       return;
     }
     if (sorceryPoints < meta.cost) {
-      alert(`Pontos de Feitiçaria insuficientes! ${meta.name} custa ${meta.cost} pontos.`);
+      onNotify?.(`Pontos de Feitiçaria insuficientes! ${meta.name} custa ${meta.cost} pontos.`, 'warning');
       return;
     }
     setSorceryPoints((p) => p - meta.cost);
     setActiveMetamagic(meta.name);
-    alert(`${meta.name} acoplada à sua próxima conjuração! Gastou ${meta.cost} Ponto(s) de Feitiçaria.`);
+    onConsumeAction?.(
+      'free',
+      `Metamagia: ${meta.name} (${meta.cost} Ponto(s) de Feitiçaria)`
+    );
   };
 
   const handleCreateSlot = () => {
     if (sorceryPoints < 2) {
-      alert('São necessários 2 Pontos de Feitiçaria para criar 1 Espaço de Magia de 1º Círculo.');
+      onNotify?.('São necessários 2 Pontos de Feitiçaria para criar 1 Espaço de Magia de 1º Círculo.', 'warning');
       return;
     }
     setSorceryPoints((p) => p - 2);
-    alert('Fonte de Magia ativada! Criou 1 Espaço de Magia de 1º Círculo por 2 Pontos de Feitiçaria.');
+    onRestoreSpellSlots?.(1);
+    onConsumeAction?.(
+      'bonus_action',
+      'Fonte de Magia: Criou 1 Espaço de Magia de 1º Círculo (2 Pts de Feitiçaria)'
+    );
   };
 
   return (

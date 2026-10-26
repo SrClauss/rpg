@@ -6,9 +6,17 @@ import { BookOpen, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface WizardHUDProps {
   character: CharacterSheet;
+  onUpdatePreparedSpells?: (spells: string[]) => void;
+  onRestoreSpellSlots?: (levelsToRecover: number) => void;
+  onNotify?: (message: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
-export const WizardHUD: FC<WizardHUDProps> = ({ character }) => {
+export const WizardHUD: FC<WizardHUDProps> = ({
+  character,
+  onUpdatePreparedSpells,
+  onRestoreSpellSlots,
+  onNotify,
+}) => {
   const intMod = calculateAbilityModifier(character.abilities.intelligence);
   const maxPrepared = Math.max(1, intMod + character.level);
 
@@ -26,10 +34,11 @@ export const WizardHUD: FC<WizardHUDProps> = ({ character }) => {
   );
 
   const [preparedSpells, setPreparedSpells] = useState<string[]>(
-    character.classResources.wizard?.preparedSpellsActive || [
-      'Mísseis Mágicos',
-      'Escudo Arcano',
-    ]
+    character.classResources.wizard?.preparedSpellsActive ||
+      character.spellsKnownOrPrepared.filter((s) => !s.includes('(Truque)')) || [
+        'Mísseis Mágicos',
+        'Escudo Arcano',
+      ]
   );
 
   const [arcaneRecoveryUsed, setArcaneRecoveryUsed] = useState<boolean>(false);
@@ -37,23 +46,39 @@ export const WizardHUD: FC<WizardHUDProps> = ({ character }) => {
   const togglePrepareSpell = (spell: string) => {
     if (spell.includes('(Truque)')) return;
     if (preparedSpells.includes(spell)) {
-      setPreparedSpells((prev) => prev.filter((s) => s !== spell));
+      const next = preparedSpells.filter((s) => s !== spell);
+      setPreparedSpells(next);
+      const cantrips = spellbook.filter((s) => s.includes('(Truque)'));
+      onUpdatePreparedSpells?.([...cantrips, ...next]);
+      onNotify?.(`Magia "${spell}" removida das magias preparadas.`, 'info');
     } else {
       if (preparedSpells.length >= maxPrepared) {
-        alert(`Limite atingido! Você pode preparar no máximo ${maxPrepared} magias (Mod. INT ${intMod >= 0 ? `+${intMod}` : intMod} + Nível ${character.level}).`);
+        onNotify?.(
+          `Limite atingido! Você pode preparar no máximo ${maxPrepared} magias (Mod. INT ${intMod >= 0 ? `+${intMod}` : intMod} + Nível ${character.level}).`,
+          'warning'
+        );
         return;
       }
-      setPreparedSpells((prev) => [...prev, spell]);
+      const next = [...preparedSpells, spell];
+      setPreparedSpells(next);
+      const cantrips = spellbook.filter((s) => s.includes('(Truque)'));
+      onUpdatePreparedSpells?.([...cantrips, ...next]);
+      onNotify?.(`Magia "${spell}" preparada no Grimório!`, 'success');
     }
   };
 
   const handleArcaneRecovery = () => {
     if (arcaneRecoveryUsed) {
-      alert('Recuperação Arcana só pode ser usada 1 vez por dia durante um Descanso Curto.');
+      onNotify?.('Recuperação Arcana só pode ser usada 1 vez por dia durante um Descanso Curto.', 'warning');
       return;
     }
+    const levelsToRecover = Math.ceil(character.level / 2);
     setArcaneRecoveryUsed(true);
-    alert(`Recuperação Arcana ativada! Recuperou até ${Math.ceil(character.level / 2)} níveis de espaços de magia gastos.`);
+    onRestoreSpellSlots?.(levelsToRecover);
+    onNotify?.(
+      `Recuperação Arcana ativada! Recuperou até ${levelsToRecover} nível(is) de espaços de magia gastos.`,
+      'success'
+    );
   };
 
   return (

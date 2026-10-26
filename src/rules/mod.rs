@@ -9,4 +9,6 @@ pub mod homebrew_loader;
 pub mod monsters;
 pub mod objects;
 pub mod poisons;
+pub mod resolver;
+pub mod rhai_spell_runtime;
 pub mod spells;

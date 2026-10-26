@@ -161,6 +161,8 @@ export interface CharacterSheet {
   spellSlots: SpellSlots;
   spellsKnownOrPrepared: string[];
   classResources: ClassSpecificResources;
+  features?: string[];
+  attacksPerAction?: number;
   inventory: Array<{
     name: string;
     quantity: number;
