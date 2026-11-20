@@ -3,10 +3,42 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DiceMode {
+    #[serde(alias = "normal", alias = "Normal")]
     Normal,
+    #[serde(alias = "advantage", alias = "vantagem", alias = "Advantage", alias = "Vantagem")]
     Advantage,
+    #[serde(alias = "disadvantage", alias = "desvantagem", alias = "Disadvantage", alias = "Desvantagem")]
     Disadvantage,
+}
+
+impl DiceMode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DiceMode::Normal => "normal",
+            DiceMode::Advantage => "advantage",
+            DiceMode::Disadvantage => "disadvantage",
+        }
+    }
+}
+
+impl std::fmt::Display for DiceMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for DiceMode {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().trim() {
+            "normal" => Ok(DiceMode::Normal),
+            "advantage" | "vantagem" => Ok(DiceMode::Advantage),
+            "disadvantage" | "desvantagem" => Ok(DiceMode::Disadvantage),
+            other => Err(format!("DiceMode inválido: {}", other)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

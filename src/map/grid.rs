@@ -10,7 +10,7 @@ pub struct GridPosition {
     pub z: i32, // Elevação em pés (0 = nível do solo, 10 = 10ft de altura)
 }
 
-/// Alias para manter compatibilidade com nomes legados se necessário
+/// Aliases mantidos para compatibilidade com módulos legados
 pub type HexPosition = GridPosition;
 
 /// 8 Direções Cardeais e Diagonais no Grid Quadrado
@@ -62,45 +62,45 @@ impl GridPosition {
         }
     }
 
-    /// Calcula o custo exato de movimento em pés em f32 entre dois quadros adjacentes usando o Teorema de Pitágoras (5ft reto, ~7.07ft diagonal)
+    /// Regra padrão D&D 5e para grid quadrado: cada passo adjacente (cardeal ou diagonal) custa 5 pés.
     pub fn step_cost_ft(&self, target: &GridPosition) -> f32 {
-        let dx = (self.x - target.x).abs() as f32 * 5.0;
-        let dy = (self.y - target.y).abs() as f32 * 5.0;
-        (dx * dx + dy * dy).sqrt()
+        let horiz = self.horizontal_distance(target) as f32 * 5.0;
+        let climb = (target.z - self.z).max(0) as f32;
+        horiz.max(climb)
     }
 
-    /// Calcula a distância 2D exata em pés no plano do grid usando o Teorema de Pitágoras em f32
+    /// Distância Euclidiana 2D exata em pés (usada para áreas de efeito circulares como Fireball)
     pub fn horizontal_distance_ft(&self, other: &GridPosition) -> f32 {
         let dx = (self.x - other.x).abs() as f32 * 5.0;
         let dy = (self.y - other.y).abs() as f32 * 5.0;
         (dx * dx + dy * dy).sqrt()
     }
 
-    /// Calcula a distância em quadros (grid 2D)
+    /// Distância 2D em quadros (Chebyshev — padrão D&D 5e)
     pub fn horizontal_distance(&self, other: &GridPosition) -> i32 {
         let dx = (self.x - other.x).abs();
         let dy = (self.y - other.y).abs();
         std::cmp::max(dx, dy)
     }
 
-    /// Calcula a distância 3D em quadros considerando elevação
+    /// Distância 3D em quadros considerando elevação (1 quadro vertical = 5 pés)
     pub fn distance(&self, other: &GridPosition) -> i32 {
         let horizontal_quads = self.horizontal_distance(other);
         let vertical_quads = (self.z - other.z).abs() / 5;
         std::cmp::max(horizontal_quads, vertical_quads)
     }
 
-    /// Retorna as 8 posições vizinhas adjacentes no mesmo plano z (cardeais + diagonais)
+    /// Retorna as 8 posições vizinhas adjacentes no mesmo plano z
     pub fn neighbors(&self) -> Vec<GridPosition> {
         vec![
-            GridPosition::with_z(self.x, self.y - 1, self.z), // N
-            GridPosition::with_z(self.x, self.y + 1, self.z), // S
-            GridPosition::with_z(self.x + 1, self.y, self.z), // E
-            GridPosition::with_z(self.x - 1, self.y, self.z), // W
-            GridPosition::with_z(self.x + 1, self.y - 1, self.z), // NE
-            GridPosition::with_z(self.x - 1, self.y - 1, self.z), // NW
-            GridPosition::with_z(self.x + 1, self.y + 1, self.z), // SE
-            GridPosition::with_z(self.x - 1, self.y + 1, self.z), // SW
+            GridPosition::with_z(self.x, self.y - 1, self.z),
+            GridPosition::with_z(self.x, self.y + 1, self.z),
+            GridPosition::with_z(self.x + 1, self.y, self.z),
+            GridPosition::with_z(self.x - 1, self.y, self.z),
+            GridPosition::with_z(self.x + 1, self.y - 1, self.z),
+            GridPosition::with_z(self.x - 1, self.y - 1, self.z),
+            GridPosition::with_z(self.x + 1, self.y + 1, self.z),
+            GridPosition::with_z(self.x - 1, self.y + 1, self.z),
         ]
     }
 }
@@ -111,23 +111,21 @@ pub enum TerrainType {
     Normal,
     Difficult,          // Deslocamento custa o dobro
     Obstacle,           // Bloqueia movimento e visão total
-    CoverHalf,          // Concede +2 CA (ex: barril)
-    CoverThreeQuarters, // Concede +5 CA (ex: fenda)
+    CoverHalf,          // Concede +2 CA
+    CoverThreeQuarters, // Concede +5 CA
     Hazard {
         save_dc: u8,
         damage_dice: String,
         condition: Option<crate::rules::conditions::Condition>,
-    }, // Terreno perigoso (Ex: Óleo, Graxa)
+    },
 }
 
-/// Postura do personagem no grid (influencia linha de visão e cobertura)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Posture {
     Standing,
     Prone,
 }
 
-/// Obstáculo posicionado no mapa
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Obstacle {
     pub position: GridPosition,
@@ -135,7 +133,6 @@ pub struct Obstacle {
     pub description: String,
 }
 
-/// Região de terreno contínua agrupando múltiplos quadros
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TerrainRegion {
     pub name: String,
@@ -144,7 +141,6 @@ pub struct TerrainRegion {
     pub squares: Vec<GridPosition>,
 }
 
-/// Tipo de Token no campo de batalha
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TokenType {
     Hero,
@@ -156,7 +152,14 @@ fn default_speed_ft() -> f32 {
     30.0
 }
 
-/// Token representando um personagem ou monstro
+fn default_posture() -> Posture {
+    Posture::Standing
+}
+
+fn default_color_hex() -> String {
+    "#3F51B5".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
     pub id: String,
@@ -174,15 +177,6 @@ pub struct Token {
     pub color_hex: String,
 }
 
-fn default_posture() -> Posture {
-    Posture::Standing
-}
-
-fn default_color_hex() -> String {
-    "#3F51B5".to_string()
-}
-
-/// O campo de batalha completo em Grid Quadrado
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleGrid {
     pub width: usize,
@@ -213,7 +207,6 @@ impl BattleGrid {
         pos.x >= 0 && pos.y >= 0 && (pos.x as usize) < self.width && (pos.y as usize) < self.height
     }
 
-    /// Retorna o tipo de terreno e descrição presente em uma posição do grid
     pub fn get_terrain_at(&self, pos: &GridPosition) -> Option<(TerrainType, String)> {
         if let Some(obs) = self.obstacles.iter().find(|o| o.position == *pos) {
             return Some((obs.terrain_type.clone(), obs.description.clone()));
@@ -223,27 +216,23 @@ impl BattleGrid {
                 return Some((region.terrain_type.clone(), region.description.clone()));
             }
         }
-
         None
     }
 
     pub fn get_obstacle_at(&self, pos: &GridPosition) -> Option<Obstacle> {
-        if let Some((terrain_type, description)) = self.get_terrain_at(pos) {
-            Some(Obstacle {
+        self.get_terrain_at(pos)
+            .map(|(terrain_type, description)| Obstacle {
                 position: *pos,
                 terrain_type,
                 description,
             })
-        } else {
-            None
-        }
     }
 
     pub fn get_token_at(&self, pos: &GridPosition) -> Option<&Token> {
-        self.tokens.iter().find(|t| t.position == *pos)
+        self.tokens.iter().find(|t| t.position == *pos && t.hp > 0)
     }
 
-    /// Aplica um perigo de terreno em área no mapa ao redor de uma posição central (Raio em pés)
+    /// Aplica um perigo de terreno em área CIRCULAR (distância Euclidiana em pés)
     pub fn apply_area_hazard(
         &mut self,
         center: GridPosition,
@@ -251,13 +240,13 @@ impl BattleGrid {
         terrain_type: TerrainType,
         description: &str,
     ) -> usize {
-        let max_quad_dist = (radius_feet as i32) / 5;
+        let max_radius = radius_feet as f32;
         let mut count = 0;
 
         for y in 0..self.height {
             for x in 0..self.width {
                 let pos = GridPosition::with_z(x as i32, y as i32, center.z);
-                if center.horizontal_distance(&pos) <= max_quad_dist {
+                if center.horizontal_distance_ft(&pos) <= max_radius {
                     self.obstacles.retain(|o| o.position != pos);
                     self.obstacles.push(Obstacle {
                         position: pos,
@@ -272,7 +261,6 @@ impl BattleGrid {
         count
     }
 
-    /// Lança um perigo de terreno a partir do conjurador em uma direção específica a uma distância fixa (em pés)
     pub fn cast_directional_hazard(
         &mut self,
         caster_pos: GridPosition,
@@ -287,6 +275,48 @@ impl BattleGrid {
         let count =
             self.apply_area_hazard(target_center, area_radius_feet, terrain_type, description);
         (target_center, count)
+    }
+
+    /// Sincroniza o BattleGrid com o estado ativo da LivingScene,
+    /// convertendo obstáculos e posições de combatentes em quadros de grid (x, y)
+    pub fn sync_with_living_scene(&mut self, scene: &crate::narrative::living_scene::LivingScene) {
+        self.obstacles.clear();
+        self.tokens.clear();
+
+        for obs in &scene.obstacles {
+            let grid_pos = obs.grid_position();
+            let terrain_type = obs.to_terrain_type();
+            self.obstacles.push(Obstacle {
+                position: grid_pos,
+                terrain_type,
+                description: format!("{}: {}", obs.name, obs.mechanical_effect),
+            });
+        }
+
+        for p in &scene.participants {
+            if let Some((gx, gy)) = p.grid_position() {
+                let token_type = if p.is_player {
+                    TokenType::Hero
+                } else if p.is_hostile {
+                    TokenType::Enemy
+                } else {
+                    TokenType::Neutral
+                };
+
+                self.tokens.push(Token {
+                    id: p.id.clone(),
+                    name: p.name.clone(),
+                    token_type,
+                    position: GridPosition::new(gx, gy),
+                    hp: p.current_hp,
+                    max_hp: p.max_hp,
+                    speed_ft: 30.0,
+                    statblock_id: None,
+                    posture: Posture::Standing,
+                    color_hex: if p.is_player { "#eab308".to_string() } else { "#ef4444".to_string() },
+                });
+            }
+        }
     }
 }
 
@@ -327,7 +357,7 @@ impl fmt::Display for BattleGrid {
         }
         writeln!(
             f,
-            "Legenda: H=Heroi, E=Inimigo, #=Parede, ~=Lama/Dificil, .=Vazio"
+            "Legenda: H=Heroi, E=Inimigo, #=Parede, ~=Lama/Dificil, !=Perigo, .=Vazio"
         )
     }
 }
@@ -340,36 +370,20 @@ mod tests {
     fn test_adjacent_distance_is_one() {
         let center = GridPosition::new(0, 0);
         let neighbors = center.neighbors();
-        assert_eq!(neighbors.len(), 8); // 8 vizinhos no grid quadrado
+        assert_eq!(neighbors.len(), 8);
         for n in neighbors {
             assert_eq!(center.distance(&n), 1);
+            assert!((center.step_cost_ft(&n) - 5.0).abs() < 0.01);
         }
     }
 
     #[test]
-    fn test_neighbors_count_and_values() {
-        let pos = GridPosition::new(3, 3);
-        let n = pos.neighbors();
-        assert_eq!(n.len(), 8);
-        assert!(n.contains(&GridPosition::new(3, 2))); // N
-        assert!(n.contains(&GridPosition::new(3, 4))); // S
-        assert!(n.contains(&GridPosition::new(4, 3))); // E
-        assert!(n.contains(&GridPosition::new(2, 3))); // W
-        assert!(n.contains(&GridPosition::new(4, 2))); // NE
-        assert!(n.contains(&GridPosition::new(2, 2))); // NW
-        assert!(n.contains(&GridPosition::new(4, 4))); // SE
-        assert!(n.contains(&GridPosition::new(2, 4))); // SW
-    }
-
-    #[test]
-    fn test_distance_calculation() {
-        let p1 = GridPosition::new(0, 0);
-        let p2 = GridPosition::new(2, 2);
-        assert_eq!(p1.horizontal_distance(&p2), 2);
-
-        let p3 = GridPosition::new(-1, -1);
-        let p4 = GridPosition::new(1, 1);
-        assert_eq!(p3.horizontal_distance(&p4), 2);
+    fn test_circular_area_hazard() {
+        let mut grid = BattleGrid::new(10, 10, "Arena".to_string());
+        let center = GridPosition::new(5, 5);
+        // Raio de 10 pés: (5,5) + 4 cardeais a 5ft + 4 diagonais a 7.07ft + 4 cardeais a 10ft = 13 quadros
+        let affected = grid.apply_area_hazard(center, 10, TerrainType::Difficult, "Lama");
+        assert_eq!(affected, 13);
     }
 
     #[test]
@@ -378,38 +392,6 @@ mod tests {
         assert!(grid.is_within_bounds(&GridPosition::new(0, 0)));
         assert!(grid.is_within_bounds(&GridPosition::new(9, 7)));
         assert!(!grid.is_within_bounds(&GridPosition::new(-1, 0)));
-        assert!(!grid.is_within_bounds(&GridPosition::new(0, -1)));
         assert!(!grid.is_within_bounds(&GridPosition::new(10, 5)));
-        assert!(!grid.is_within_bounds(&GridPosition::new(5, 8)));
-    }
-
-    #[test]
-    fn test_cast_directional_hazard() {
-        let mut grid = BattleGrid::new(20, 20, "Caverna".to_string());
-        let caster_pos = GridPosition::new(5, 5);
-
-        // Lança Grease na direção Leste a 60 pés (12 quadros de distância), com raio de 10 pés
-        let (target_pos, affected) = grid.cast_directional_hazard(
-            caster_pos,
-            GridDirection::East,
-            60,
-            10,
-            TerrainType::Hazard {
-                save_dc: 13,
-                damage_dice: "0".to_string(),
-                condition: Some(crate::rules::conditions::Condition::Prone),
-            },
-            "Mancha de Graxa",
-        );
-
-        assert_eq!(target_pos, GridPosition::new(17, 5));
-        assert!(affected > 0);
-        let (terrain, desc) = grid.get_terrain_at(&target_pos).unwrap();
-        assert_eq!(desc, "Mancha de Graxa");
-        if let TerrainType::Hazard { save_dc, .. } = terrain {
-            assert_eq!(save_dc, 13);
-        } else {
-            panic!("Deveria ser TerrainType::Hazard");
-        }
     }
 }

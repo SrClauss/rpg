@@ -44,6 +44,10 @@ pub enum CastOutcome {
     },
     FailedNoSlot,
     FailedMissingChoice,
+    FailedMissingTarget,
+    MultiHitDamage {
+        total_damage: i32,
+    },
     ConditionCured {
         condition: crate::rules::conditions::Condition,
     },
@@ -129,15 +133,7 @@ pub fn cast_spell_with_choice(
         false // Truques não consomem slots
     };
 
-    // 2. Aplicação de Concentração se exigida pela magia
-    if spell.requires_concentration {
-        caster.active_concentration = Some(ActiveConcentration {
-            spell_name: spell.name.clone(),
-            spell_level: spell.level,
-        });
-    }
-
-    // 3. Resolução dos Efeitos da Magia
+    // 2. Resolução dos Efeitos da Magia (Validação de Escolhas)
     let mut effect_to_eval = &spell.effect;
     if let SpellEffect::Choice(options) = effect_to_eval {
         if let Some(idx) = choice_index {
@@ -165,6 +161,35 @@ pub fn cast_spell_with_choice(
         }
     }
 
+    // Validação de Alvo Obrigatório
+    let requires_target = matches!(
+        effect_to_eval,
+        SpellEffect::SpellAttack { .. }
+            | SpellEffect::SaveThrow { .. }
+            | SpellEffect::Healing { .. }
+            | SpellEffect::CureCondition(_)
+            | SpellEffect::ApplyEffect { .. }
+            | SpellEffect::MultiTargetSpellAttack { .. }
+    );
+    if requires_target && target.is_none() {
+        return CastSpellResult {
+            spell_name: spell.name.clone(),
+            spell_level: spell.level,
+            slot_consumed,
+            spell_save_dc,
+            spell_attack_bonus,
+            outcome: CastOutcome::FailedMissingTarget,
+        };
+    }
+
+    // 3. Aplicação de Concentração se exigida pela magia (APÓS validações de escolha e alvo)
+    if spell.requires_concentration {
+        caster.active_concentration = Some(ActiveConcentration {
+            spell_name: spell.name.clone(),
+            spell_level: spell.level,
+        });
+    }
+
     // INVISIBILITY HOOK: Casting any spell breaks invisibility
     if caster.has_condition(&crate::rules::conditions::Condition::Invisible) {
         caster.remove_condition(&crate::rules::conditions::Condition::Invisible);
@@ -177,7 +202,19 @@ pub fn cast_spell_with_choice(
             damage_scaling: _,
             on_hit_effect,
         } => {
-            let target_entity = target.expect("Ataque Mágico requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
 
             // Cria uma arma virtual representando o Ataque Mágico
             let spell_weapon = Weapon::spell_attack(&spell.name, damage_dice, *damage_type);
@@ -233,7 +270,19 @@ pub fn cast_spell_with_choice(
             damage_scaling: _,
             fail_effect,
         } => {
-            let target_entity = target.expect("Magia com Salvaguarda requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
             let save_result = roll_saving_throw(
                 target_entity,
                 *save_ability,
@@ -309,7 +358,19 @@ pub fn cast_spell_with_choice(
             }
         }
         SpellEffect::Healing { healing_dice } => {
-            let target_entity = target.expect("Magia de Cura requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
             let mut heal_amount = 0;
             if let Ok(mut dice) = Dice::from_str(healing_dice) {
                 dice.modifier = spellcasting_mod;
@@ -350,7 +411,19 @@ pub fn cast_spell_with_choice(
             description: description.clone(),
         },
         SpellEffect::CureCondition(conditions) => {
-            let target_entity = target.expect("Cura de Condição requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
             let mut cured_cond = None;
 
             for cond in conditions {
@@ -384,7 +457,19 @@ pub fn cast_spell_with_choice(
             }
         }
         SpellEffect::ApplyEffect { effect, duration } => {
-            let target_entity = target.expect("Aplicaçao de efeito requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
             let applied = crate::rules::character::active_effects::AppliedEffect {
                 effect: effect.clone(),
                 duration: duration.clone(),
@@ -433,7 +518,19 @@ pub fn cast_spell_with_choice(
             damage_type: _,
             auto_hit,
         } => {
-            let target_entity = target.expect("MultiTargetSpellAttack requer um alvo válido");
+            let target_entity = match target.as_deref_mut() {
+                Some(t) => t,
+                None => {
+                    return CastSpellResult {
+                        spell_name: spell.name.clone(),
+                        spell_level: spell.level,
+                        slot_consumed,
+                        spell_save_dc,
+                        spell_attack_bonus,
+                        outcome: CastOutcome::FailedMissingTarget,
+                    };
+                }
+            };
             let mut total_damage = 0;
             if *auto_hit {
                 for _ in 0..*projectiles_count {
@@ -444,9 +541,9 @@ pub fn cast_spell_with_choice(
                 target_entity.current_hp =
                     std::cmp::max(0, target_entity.current_hp - total_damage);
             }
-            CastOutcome::Healed {
-                amount: total_damage,
-            } // Reutilizando variante para repasse de dano total
+            CastOutcome::MultiHitDamage {
+                total_damage,
+            }
         }
         SpellEffect::Sleep {
             pool_dice,

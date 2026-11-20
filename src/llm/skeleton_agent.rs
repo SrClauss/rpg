@@ -1,7 +1,8 @@
 use crate::llm::gemini::GeminiClient;
-use crate::narrative::skeleton::{AutonomousWorldEvent, NarrativeSkeleton, SkeletonNode};
+use crate::narrative::skeleton::{AutonomousWorldEvent, NarrativeSkeleton, SkeletonNode, StoryFocus};
 use serde_json::Value;
 use std::error::Error;
+use std::str::FromStr;
 
 pub struct SkeletonAgent {
     pub gemini: GeminiClient,
@@ -26,16 +27,17 @@ impl SkeletonAgent {
         ai_creative_freedom: &str,
         story_focus: &str,
     ) -> Result<NarrativeSkeleton, Box<dyn Error>> {
+        let typed_focus = StoryFocus::from_str(story_focus).unwrap_or(StoryFocus::D20);
         let freedom_directive = match ai_creative_freedom {
             "strict" => "DIRETRIZ DE LIMITAÇÃO CRIATIVA RÍGIDA: A IA NÃO DEVE inventar monstros ou bosses homebrew próprios além dos explicitamente definidos pelo usuário na premissa. Foque estritamente no cânone da premissa e regras oficiais do SRD 5.1. Se não houver monstros fornecidos, use apenas criaturas oficiais e não invente novos bosses.",
             "free" => "DIRETRIZ DE LIBERDADE CRIATIVA TOTAL: A IA tem total autonomia artística e ousadia para inventar seus próprios Bosses Homebrew arrojados, reviravoltas cósmicas, mecânicas táticas únicas e eventos chocantes, expandindo ativamente a premissa com criatividade ilimitada.",
             _ => "DIRETRIZ DE LIBERDADE EQUILIBRADA (Padrão): A IA respeita fielmente os monstros e temas informados pelo usuário, mas pode introduzir ou adaptar 1 Boss Homebrew complementar com bom senso dramático se enriquecer a trama e fizer sentido temático.",
         };
 
-        let focus_directive = match story_focus {
-            "combat" => "FOCO DA CAMPANHA: COMBATE TÁTICO & MASMORRAS (Hack & Slash / Tático). A história deve ter confrontos frequentes, masmorras perigosas, desafios físicos e chefes desafiadores em cada arco.",
-            "roleplay" => "FOCO DA CAMPANHA: ROLEPLAY & INTRIGA (Narrativo & Social). A história foca em diálogos, investigação, diplomacia, segredos e dilemas morais. Evite batalhas desnecessárias; permita resolver conflitos sem sangue.",
-            _ => "FOCO DA CAMPANHA: D20 DO DESTINO (Equilibrado / Sorte dos Dados). Para cada arco ou ato, role mentalmente 1d20: valores de 1 a 10 favorecem roleplay e investigação sutil; valores de 11 a 20 favorecem batalhas táticas e emboscadas viscerais.",
+        let focus_directive = match typed_focus {
+            StoryFocus::Combat => "FOCO DA CAMPANHA: COMBATE TÁTICO & MASMORRAS (Hack & Slash / Tático). A história deve ter confrontos frequentes, masmorras perigosas, desafios físicos e chefes desafiadores em cada arco.",
+            StoryFocus::Roleplay => "FOCO DA CAMPANHA: ROLEPLAY & INTRIGA (Narrativo & Social). A história foca em diálogos, investigação, diplomacia, segredos e dilemas morais. Evite batalhas desnecessárias; permita resolver conflitos sem sangue.",
+            StoryFocus::D20 => "FOCO DA CAMPANHA: D20 DO DESTINO (Equilibrado / Sorte dos Dados). Para cada arco ou ato, role mentalmente 1d20: valores de 1 a 10 favorecem roleplay e investigação sutil; valores de 11 a 20 favorecem batalhas táticas e emboscadas viscerais.",
         };
 
         let system_instruction = format!(
@@ -118,7 +120,7 @@ Você DEVE responder APENAS com um JSON puro (sem markdown, sem explicações), 
         match parsed {
             Ok(v) => {
                 let mut skeleton = NarrativeSkeleton::new(premise, literary_style);
-                skeleton.story_focus = Some(story_focus.to_string());
+                skeleton.story_focus = Some(typed_focus);
 
                 if let Some(acts) = v["expected_acts"].as_array() {
                     for act in acts {
@@ -719,75 +721,9 @@ Entregue APENAS um JSON puro no seguinte formato (subclass_overrides, custom_spe
             "Aventura Clássica D&D 5e (Equilibrada)"
         };
 
-        let mut subclass_overrides = Vec::new();
-        if p_lower.contains("mumm-ra") || p_lower.contains("mumm ra") {
-            subclass_overrides.push(serde_json::json!({
-                "parent_class": "Warlock",
-                "replaces": "O Grande Antigo",
-                "name": "O Ser Eterno (Pacto de Mumm-Ra)",
-                "description": "Canaliza os Antigos Espíritos do Mal. Permite transformar a carne mortal na Forma Eterna com aumento de CA e dano necrótico.",
-                "special_ability": "Invocação dos Antigos Espíritos do Mal"
-            }));
-        }
-
-        let mut custom_spells = Vec::new();
-        if p_lower.contains("magia") || p_lower.contains("feiticeiro") || p_lower.contains("feitiço") || p_lower.contains("plasma") || p_lower.contains("mumm-ra") {
-            if p_lower.contains("plasma") || (p_lower.contains("magia") && p_lower.contains("feiticeiro")) {
-                custom_spells.push(serde_json::json!({
-                    "name": "Rajada de Plasma",
-                    "level": 1,
-                    "classes": ["Sorcerer", "Wizard"],
-                    "school": "Evocação",
-                    "description": "Dispara um feixe de pura energia iônica instável que atinge o alvo causando 3d8 de dano de fogo e força."
-                }));
-            }
-        }
-
-        let mut custom_monsters = Vec::new();
-        if p_lower.contains("espelho") || p_lower.contains("obsidiana") || p_lower.contains("doppelg") || p_lower.contains("snowee") || p_lower.contains("corrompida") || p_lower.contains("dunga") || p_lower.contains("algoz") {
-            if p_lower.contains("espelho") || p_lower.contains("obsidiana") || p_lower.contains("doppelg") {
-                custom_monsters.push(serde_json::json!({
-                    "name": "O Espelho de Obsidiana (Demônio Doppelgänger)",
-                    "type": "Corruptor Médio (Metamorfo), Neutro e Mau",
-                    "cr": "3",
-                    "ac": 14,
-                    "hp": 52,
-                    "speed": "9 m",
-                    "stats": { "str": 11, "dex": 18, "con": 14, "int": 11, "wis": 12, "cha": 16 },
-                    "abilities": ["A Prisão de Vidro", "Ler Pensamentos", "Metamorfo Profano"],
-                    "actions": ["Ações Múltiplas (2 ataques)", "Golpe Enganoso (+6, 1d6+4 + 3d6 psíquico)", "Sussurros do Abismo (Coroa da Loucura CD 13)"],
-                    "description": "Entidade enigmática envolta em sombras e reflexos distorcidos."
-                }));
-            }
-            if p_lower.contains("snowee") || p_lower.contains("princesa corrompida") {
-                custom_monsters.push(serde_json::json!({
-                    "name": "Snowee, a Princesa Corrompida",
-                    "type": "Humanoide Médio (Corrompido), Caótico e Neutro",
-                    "cr": "9",
-                    "ac": 16,
-                    "hp": 135,
-                    "speed": "9 m",
-                    "stats": { "str": 10, "dex": 16, "con": 16, "int": 14, "wis": 12, "cha": 20 },
-                    "abilities": ["Imunidades: Dano gélido, Enfeitiçado, Amedrontado", "Aura do Coração Congelado (1d6 gélido e 1/2 vel)"],
-                    "actions": ["Lâmina de Gelo (+7, 2d8+3 + 1d8 gélido)", "Sopro de Estilhaços (Cone 9m, CD 15, 8d8)", "Ações Lendárias (3/turno)"],
-                    "description": "Figura trágica ligada ao frio sobrenatural que assola as montanhas."
-                }));
-            }
-            if p_lower.contains("dunga") {
-                custom_monsters.push(serde_json::json!({
-                    "name": "Dunga, o Algoz Sorridente",
-                    "type": "Humanoide Pequeno (Goblinoide), Caótico e Mau",
-                    "cr": "11",
-                    "ac": 18,
-                    "hp": 110,
-                    "speed": "15 m, escalada 15 m",
-                    "stats": { "str": 12, "dex": 22, "con": 14, "int": 10, "wis": 16, "cha": 8 },
-                    "abilities": ["Ataque Furtivo (6d6)", "Frenesi Sanguinário", "Evasão", "Esquiva Sobrenatural"],
-                    "actions": ["Ataques Múltiplos (3 adagas serrilhadas)", "Adaga Serrilhada (+10, 1d4+6 + 2d6 necrótico)"],
-                    "description": "Caçador implacável das sombras com sorriso gélido e armas envenenadas."
-                }));
-            }
-        }
+        let subclass_overrides = crate::llm::campaign_presets::CampaignPresets::get_subclass_overrides(&p_lower);
+        let custom_spells = crate::llm::campaign_presets::CampaignPresets::get_custom_spells(&p_lower);
+        let custom_monsters = crate::llm::campaign_presets::CampaignPresets::get_custom_monsters(&p_lower);
 
         let rec_size = if p_lower.contains("cinco") || p_lower.contains("quinteto") {
             "5 aventureiros (Quinteto)"

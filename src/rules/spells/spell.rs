@@ -228,7 +228,7 @@ pub fn create_fireball() -> Spell {
             save_ability: Ability::Dexterity,
             half_damage_on_save: true,
             damage_dice: Some("8d6".to_string()),
-            damage_type: Some(DamageType::Bludgeoning),
+            damage_type: Some(DamageType::Fire),
             damage_scaling: Some("spell_slot".to_string()),
             fail_effect: None,
         },

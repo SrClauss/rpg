@@ -164,8 +164,11 @@ fn cast_spell(caster, target, ctx) {
 
 API DISPONÍVEL NO OBJETO ctx (CombatContext):
 - ctx.roll("2d6") -> i64 (rola dados)
-- ctx.roll_save(target.name, mod_int, dc_int) -> bool (retorna true se passou)
+- ctx.roll_save(nome_alvo_string, mod_int, dc_int) -> bool (retorna true se passou)
 - ctx.log_msg("mensagem") (registra narrativa/efeito)
+- ctx.secondary_count() -> i64 (retorna a quantidade de alvos secundários na área/cone)
+- ctx.get_secondary_name(indice_i64) -> String (nome do alvo secundário)
+- ctx.damage_secondary(indice_i64, "TipoDano", quantidade_i64) (aplica dano a alvo secundário no cone/área)
 
 API DISPONÍVEL NO OBJETO target e caster (TargetProxy):
 - target.name -> String
@@ -178,12 +181,15 @@ API DISPONÍVEL NO OBJETO target e caster (TargetProxy):
 
 Regras de D&D 5e:
 - Se a magia exigir salvaguarda, chame ctx.roll_save. Se passar, reduza o dano pela metade (ou conforme descrição).
-- Aplique o dano em target.take_damage ou a cura em target.heal.
+- Aplique o dano no alvo principal em target.take_damage ou a cura em target.heal.
+- Se houver cone/área/estilhaços atrás do alvo afetando alvos secundários, você DEVE iterar de 0 até ctx.secondary_count() - 1, testar a salvaguarda de cada um com ctx.roll_save e aplicar o dano com ctx.damage_secondary(i, "Tipo", dano). NUNCA omita a mecânica secundária!
+- IMPORTANTE DE SINTAXE RHAI: Rhai NÃO SUPORTA operador ternário `cond ? a : b`. SEMPRE use `if cond { a } else { b }`.
+- No final da função, DEVE OBRIGATORIAMENTE retornar `return target;`.
 - Responda APENAS com o código Rhai puro dentro da função `fn cast_spell(caster, target, ctx) { ... }`, sem explicações e sem bloco markdown.
 "#;
 
         let draft_prompt = format!(
-            "DESCRICAO DA MAGIA:\n{}\n\nEscreva a função `fn cast_spell(caster, target, ctx)` em Rhai:",
+            "DESCRICAO DA MAGIA:\n{}\n\nEscreva a função completa `fn cast_spell(caster, target, ctx)` em Rhai contemplando TODOS os efeitos e retornando target no final (lembrando: NUNCA use operador ternário `? :`):",
             spell_description
         );
 
@@ -192,13 +198,20 @@ Regras de D&D 5e:
         println!("[SPELL_COMPILER] Passo 2: DeepSeek V3 atuando como Linter & Revisor de Sintaxe Rhai...");
         let critique_guidelines = r#"Você é um linter estrito de sintaxe da linguagem Rhai e regras de D&D 5e.
 Verifique se o script Rhai contém:
-1. Assinatura exata `fn cast_spell(caster, target, ctx)`
-2. Chamadas válidas aos métodos: ctx.roll("..."), ctx.roll_save(nome, mod, dc), target.take_damage("tipo", qtd), target.heal(qtd), target.add_condition("cond")
-3. Ausência de palavras-chave inválidas ou tipos do Rust incompatíveis com Rhai.
+1. Assinatura exata `fn cast_spell(caster, target, ctx)` e termina com `return target;`.
+2. PROIBIÇÃO ABSOLUTA DE OPERADOR TERNÁRIO: Rhai NÃO tem operador `? :` (ternary). Se houver `cond ? x : y`, aponte erro fatal e ordene substituir por `if cond { x } else { y }`.
+3. Se a magia tiver efeitos secundários/em cone, verifica se trata `ctx.secondary_count()` e `ctx.damage_secondary(...)`.
+4. Chamadas válidas aos métodos: ctx.roll("..."), ctx.roll_save(nome, mod, dc), target.take_damage("tipo", qtd), target.heal(qtd), target.add_condition("cond").
+5. Ausência de palavras-chave inválidas ou tipos do Rust incompatíveis com Rhai.
 Forneça correções pontuais e diretas. Se o código já estiver perfeito, responda 'SCRIPT_VALIDO'."#;
 
-        let critique = self.deepseek.critique_text(&draft, critique_guidelines).await.unwrap_or_else(|_| "SCRIPT_VALIDO".to_string());
-
+        println!("[SPELL_COMPILER] Passo 2: DeepSeek V3 atuando como Linter & Revisor de Sintaxe Rhai...");
+        let critique = self
+            .deepseek
+            .lint_code(&draft, critique_guidelines)
+            .await
+            .unwrap_or_else(|_| "SCRIPT_VALIDO".to_string());
+        
         let final_script = if critique.contains("SCRIPT_VALIDO") {
             draft
         } else {

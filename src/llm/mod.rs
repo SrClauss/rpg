@@ -1,3 +1,4 @@
+pub mod campaign_presets;
 pub mod deepseek;
 pub mod environment_agent;
 pub mod gemini;
@@ -5,6 +6,7 @@ pub mod orchestrator;
 pub mod scene_closer;
 pub mod skeleton_agent;
 
+pub use campaign_presets::CampaignPresets;
 pub use deepseek::DeepSeekClient;
 pub use environment_agent::{EnvironmentAgent, EnvironmentTurnOutput};
 pub use gemini::GeminiClient;

@@ -1,16 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{LazyLock, RwLock};
 
 use super::spell::{
     create_cure_wounds, create_fire_bolt, create_fireball, Spell,
 };
 
-/// Registro Global Estático de Magias (SRD 5.1 e Homebrew)
-pub static GLOBAL_SPELLS: LazyLock<SpellRegistry> = LazyLock::new(|| {
+/// Registro Global Estático de Magias (SRD 5.1 e Homebrew), protegido por RwLock para registro em tempo de execução
+pub static GLOBAL_SPELLS: LazyLock<RwLock<SpellRegistry>> = LazyLock::new(|| {
     let mut reg = SpellRegistry::new();
     reg.load_default_srd_spells();
-    reg
+    RwLock::new(reg)
 });
 
 /// Catálogo Central de Magias
@@ -51,19 +51,25 @@ impl SpellRegistry {
         self.spells.insert(key, spell);
     }
 
+    /// Registra uma magia diretamente no registro global de forma thread-safe (ex: via Rhai runtime)
+    pub fn register_global_spell(spell: Spell) {
+        if let Ok(mut reg) = GLOBAL_SPELLS.write() {
+            reg.register_spell(spell);
+        }
+    }
+
     /// Busca uma magia global pelo nome/id
     pub fn get_spell(name: &str) -> Option<Spell> {
         let key = name.to_lowercase().replace(' ', "_");
-        GLOBAL_SPELLS.spells.get(&key).cloned()
+        GLOBAL_SPELLS.read().ok()?.spells.get(&key).cloned()
     }
 
     /// Retorna todos os nomes de magias registradas
     pub fn list_spell_names() -> Vec<String> {
         GLOBAL_SPELLS
-            .spells
-            .values()
-            .map(|s| s.name.clone())
-            .collect()
+            .read()
+            .map(|r| r.spells.values().map(|s| s.name.clone()).collect())
+            .unwrap_or_default()
     }
 
     /// Carrega magias Homebrew a partir de uma string JSON

@@ -252,13 +252,13 @@ pub fn load_level3_spells(reg: &mut SpellRegistry) {
         "Instantaneous",
         false, // Concentration
         false, // Ritual
-        SpellEffect::AreaHazard {
-            radius_feet: 20,
-            save_ability: Some(Ability::Dexterity),
-            condition: None,
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
             damage_dice: Some("8d6".to_string()),
             damage_type: Some(DamageType::Fire),
-            description: "".to_string(),
+            damage_scaling: Some("spell_slot".to_string()),
+            fail_effect: None,
         },
     ));
 
@@ -355,13 +355,13 @@ pub fn load_level3_spells(reg: &mut SpellRegistry) {
         "Instantaneous",
         false, // Concentration
         false, // Ritual
-        SpellEffect::AreaHazard {
-            radius_feet: 5,
-            save_ability: Some(Ability::Dexterity),
-            condition: None,
+        SpellEffect::SaveThrow {
+            save_ability: Ability::Dexterity,
+            half_damage_on_save: true,
             damage_dice: Some("8d6".to_string()),
             damage_type: Some(DamageType::Lightning),
-            description: "".to_string(),
+            damage_scaling: Some("spell_slot".to_string()),
+            fail_effect: None,
         },
     ));
 
@@ -404,11 +404,9 @@ pub fn load_level3_spells(reg: &mut SpellRegistry) {
         "Instantaneous",
         false, // Concentration
         false, // Ritual
-        SpellEffect::MultiTargetSpellAttack {
-            projectiles_count: 6,
-            damage_dice: "1d4".to_string(),
-            damage_type: DamageType::Radiant,
-            auto_hit: true,
+        SpellEffect::MultiTargetHealing {
+            max_targets: 6,
+            healing_dice: "1d4".to_string(),
         },
     ));
 
@@ -1202,13 +1200,13 @@ mod tests {
             "Instantaneous",
             false,
             false,
-            SpellEffect::AreaHazard {
-                radius_feet: 20,
-                save_ability: Some(Ability::Dexterity),
-                condition: None,
+            SpellEffect::SaveThrow {
+                save_ability: Ability::Dexterity,
+                half_damage_on_save: true,
                 damage_dice: Some("8d6".to_string()),
                 damage_type: Some(DamageType::Fire),
-                description: "".to_string(),
+                damage_scaling: Some("spell_slot".to_string()),
+                fail_effect: None,
             },
         );
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
@@ -1241,7 +1239,7 @@ mod tests {
         );
         assert!(matches!(
             outcome.outcome,
-            CastOutcome::AreaHazardCreated { .. }
+            CastOutcome::SaveRoll { .. }
         ));
     }
 
@@ -1502,13 +1500,13 @@ mod tests {
             "Instantaneous",
             false,
             false,
-            SpellEffect::AreaHazard {
-                radius_feet: 5,
-                save_ability: Some(Ability::Dexterity),
-                condition: None,
+            SpellEffect::SaveThrow {
+                save_ability: Ability::Dexterity,
+                half_damage_on_save: true,
                 damage_dice: Some("8d6".to_string()),
                 damage_type: Some(DamageType::Lightning),
-                description: "".to_string(),
+                damage_scaling: Some("spell_slot".to_string()),
+                fail_effect: None,
             },
         );
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);
@@ -1541,7 +1539,7 @@ mod tests {
         );
         assert!(matches!(
             outcome.outcome,
-            CastOutcome::AreaHazardCreated { .. }
+            CastOutcome::SaveRoll { .. }
         ));
     }
 
@@ -1653,11 +1651,9 @@ mod tests {
             "Instantaneous",
             false,
             false,
-            SpellEffect::MultiTargetSpellAttack {
-                projectiles_count: 6,
-                damage_dice: "1d4".to_string(),
-                damage_type: DamageType::Radiant,
-                auto_hit: true,
+            SpellEffect::MultiTargetHealing {
+                max_targets: 6,
+                healing_dice: "1d4".to_string(),
             },
         );
         let attrs = AbilityScores::new(10, 10, 10, 10, 10, 10);

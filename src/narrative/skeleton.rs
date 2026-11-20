@@ -36,6 +36,42 @@ pub struct SkeletonCorruptionRecord {
     pub new_plan_summary: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StoryFocus {
+    Combat,
+    Roleplay,
+    D20,
+}
+
+impl StoryFocus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            StoryFocus::Combat => "combat",
+            StoryFocus::Roleplay => "roleplay",
+            StoryFocus::D20 => "d20",
+        }
+    }
+}
+
+impl std::fmt::Display for StoryFocus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for StoryFocus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().trim() {
+            "combat" => Ok(StoryFocus::Combat),
+            "roleplay" => Ok(StoryFocus::Roleplay),
+            "d20" => Ok(StoryFocus::D20),
+            other => Err(format!("StoryFocus inválido: {}", other)),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NarrativeSkeleton {
     pub id: String,
@@ -49,7 +85,7 @@ pub struct NarrativeSkeleton {
     #[serde(default)]
     pub homebrew_bosses: Vec<serde_json::Value>,
     #[serde(default)]
-    pub story_focus: Option<String>, // "combat", "roleplay", "d20"
+    pub story_focus: Option<StoryFocus>,
 }
 
 impl NarrativeSkeleton {

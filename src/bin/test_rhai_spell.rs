@@ -1,5 +1,4 @@
 use dotenvy::dotenv;
-use rhai::Dynamic;
 use rpg_engine::llm::NarrativeOrchestrator;
 use rpg_engine::rules::rhai_spell_runtime::{create_spell_rhai_engine, CombatContext, TargetProxy};
 use std::env;
@@ -18,8 +17,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let orchestrator = NarrativeOrchestrator::new(gemini_key, deepseek_key);
 
-    // 1. String natural da magia (entrada de premissa do usuário)
-    let spell_prompt = "Magia: 'Toque da Geada Abissal'. O conjurador toca o alvo. O alvo deve passar em uma Salvaguarda de Constituição CD 14. Se falhar, sofre 3d8 de dano gélido e fica sob a condição 'Congelado' por 1 rodada. Se passar, sofre apenas metade do dano e não fica congelado.";
+    // 1. String natural da magia (entrada solicitada pelo usuário)
+    let spell_prompt = "Magia: 'Impacto Glacial e Estilhaços'. O conjurador arremessa um gigantesco bloco de gelo contra um alvo principal. O impacto causa 4d8 de dano de Concussão (Físico) ao atingido. Logo em seguida, o bloco se espatifa e projeta estilhaços congelantes em um cone atrás do alvo atingido: criaturas na área devem passar em uma Salvaguarda de Destreza CD 15 para sofrer metade, ou sofrer 3d6 de dano Perfurante + 2d6 de dano de Frio se falharem.";
 
     println!("\n📥 1. ENTRADA EM LINGUAGEM NATURAL:\n{}", spell_prompt);
 
@@ -34,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 3. Backend Rust prepara o ambiente de execução determinístico
     println!("\n⚙️ 3. PREPARANDO AMBIENTE DE EXECUÇÃO EM RUST (Rhai Sandbox)...");
     let engine = create_spell_rhai_engine();
-    let ast = match engine.compile(&rhai_code) {
+    let _ast = match engine.compile(&rhai_code) {
         Ok(a) => a,
         Err(e) => {
             eprintln!("❌ Erro de compilação Rhai: {}", e);
@@ -43,14 +42,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     println!("✓ Script Rhai compilado para AST com sucesso pelo Rust!");
 
-    // 4. Instancia entidades de combate (Conjurador, Alvo e Contexto)
-    let mut caster = TargetProxy::new("Mago Alistair", 45, 12);
-    let mut target = TargetProxy::new("Troll da Caverna", 84, 15);
+    // 4. Instancia entidades de combate (Conjurador, Alvo Principal e Alvos Secundários atrás no cone)
+    let caster = TargetProxy::new("Mago Alistair", 45, 12);
+    let target = TargetProxy::new("Ogro Brutamontes (Alvo Direto)", 90, 14);
     let mut ctx = CombatContext::new();
+
+    // Adiciona 2 inimigos que estão posicionados atrás do Ogro dentro do cone de estilhaços
+    ctx.add_secondary_target(TargetProxy::new("Goblin Arqueiro A (No Cone)", 25, 13));
+    ctx.add_secondary_target(TargetProxy::new("Goblin Arqueiro B (No Cone)", 25, 13));
 
     println!("\n🎯 ESTADO INICIAL DO COMBATE:");
     println!("- Conjurador: {} (PV: {}/{})", caster.name, caster.current_hp, caster.max_hp);
-    println!("- Alvo: {} (PV: {}/{}, Condições: {:?})", target.name, target.current_hp, target.max_hp, target.conditions);
+    println!("- Alvo Principal: {} (PV: {}/{})", target.name, target.current_hp, target.max_hp);
+    println!("- Alvos Secundários no Cone atrás do Ogro:");
+    for st in &ctx.secondary_targets {
+        println!("   * {} (PV: {}/{})", st.name, st.current_hp, st.max_hp);
+    }
 
     // 5. Executa a função da magia deterministicamente no Rhai
     println!("\n⚡ 4. EXECUTANDO A MAGIA NO RHAI...");
@@ -59,28 +66,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
     scope.push("target", target.clone());
     scope.push("ctx", ctx.clone());
 
-    // Executa a função chamando target = cast_spell(caster, target, ctx);
-    let full_script = format!("{}\ntarget = cast_spell(caster, target, ctx);", rhai_code);
-    match engine.eval_with_scope::<Dynamic>(&mut scope, &full_script) {
-        Ok(_) => println!("✓ Execução concluída sem erros no Rhai!"),
-        Err(e) => eprintln!("❌ Erro na execução: {:?}", e),
-    }
+    // Executa a função passando caster, target, ctx e reatribui target = cast_spell(...)
+    // Garantimos que o array retorne [target, ctx] atualizados
+    let full_script = format!("{}\ntarget = cast_spell(caster, target, ctx);\n[target, ctx]", rhai_code);
+    let result_pair: rhai::Array = match engine.eval_with_scope::<rhai::Array>(&mut scope, &full_script) {
+        Ok(res) => {
+            println!("✓ Execução concluída sem erros no Rhai!");
+            res
+        }
+        Err(e) => {
+            eprintln!("❌ Erro na execução: {:?}", e);
+            return Err(e.to_string().into());
+        }
+    };
 
-    // Recupera os objetos mutados pelo Rhai
-    let target: TargetProxy = scope.get_value("target").unwrap();
-    let ctx: CombatContext = scope.get_value("ctx").unwrap();
+    let target: TargetProxy = result_pair[0].clone().cast::<TargetProxy>();
+    let ctx: CombatContext = result_pair[1].clone().cast::<CombatContext>();
 
     println!("\n📊 5. LOG DE EVENTOS MECÂNICOS DO MOTOR RUST:");
     for log in &ctx.log {
         println!("  {}", log);
     }
 
-    println!("\n🏁 ESTADO FINAL DO ALVO APÓS A MAGIA:");
-    println!("- Alvo: {} (PV: {}/{})", target.name, target.current_hp, target.max_hp);
-    println!("- Condições ativas: {:?}", target.conditions);
+    println!("\n🏁 ESTADO FINAL APÓS A MAGIA:");
+    println!("- Alvo Principal: {} (PV: {}/{})", target.name, target.current_hp, target.max_hp);
+    println!("- Alvos Secundários no Cone:");
+    for st in &ctx.secondary_targets {
+        println!("   * {} (PV: {}/{})", st.name, st.current_hp, st.max_hp);
+    }
 
-    assert!(target.current_hp < 84, "O PV do alvo deveria ter sido reduzido deterministicamente");
-    println!("\n✅ SUCESSO TOTAL! A IA escreveu o algoritmo, e o Rust/Rhai aplicou o dano e a condição perfeitamente!");
+    assert!(target.current_hp < 90, "O Ogro deveria ter sofrido dano físico do bloco");
+    println!("\n✅ SUCESSO! A magia gerou tanto o dano de impacto quanto o efeito em cone atrás do alvo!");
     println!("===================================================================");
 
     Ok(())

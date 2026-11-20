@@ -86,15 +86,111 @@ pub struct TurnParticipant {
     pub token_role: Option<String>, // ex: "Fighter", "Ranger", "Inimigo", "Chefe", "Aliado"
 }
 
+impl TurnParticipant {
+    /// Converte a coordenada em pés (passos de 5ft) em quadros inteiros no grid (gx, gy)
+    pub fn grid_position(&self) -> Option<(i32, i32)> {
+        self.position.map(|(px, py)| (px / 5, py / 5))
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ViaType {
+    #[serde(alias = "via1")]
+    Via1,
+    #[serde(alias = "via2")]
+    Via2,
+    #[serde(alias = "via3")]
+    Via3,
+    EndTurn,
+}
+
+impl ViaType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ViaType::Via1 => "via1",
+            ViaType::Via2 => "via2",
+            ViaType::Via3 => "via3",
+            ViaType::EndTurn => "end_turn",
+        }
+    }
+}
+
+impl std::fmt::Display for ViaType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for ViaType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().trim() {
+            "via1" | "via_1" => Ok(ViaType::Via1),
+            "via2" | "via_2" => Ok(ViaType::Via2),
+            "via3" | "via_3" => Ok(ViaType::Via3),
+            "end_turn" | "endturn" => Ok(ViaType::EndTurn),
+            other => Err(format!("ViaType inválido: {}", other)),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ObstacleType {
+    Cover,
+    Hazard,
+    DifficultTerrain,
+    Chokepoint,
+}
+
+impl ObstacleType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ObstacleType::Cover => "cover",
+            ObstacleType::Hazard => "hazard",
+            ObstacleType::DifficultTerrain => "difficult_terrain",
+            ObstacleType::Chokepoint => "chokepoint",
+        }
+    }
+}
+
+impl std::fmt::Display for ObstacleType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SceneObstacle {
     pub id: String,
     pub name: String,
-    pub obstacle_type: String, // "cover" | "hazard" | "difficult_terrain" | "chokepoint"
+    pub obstacle_type: ObstacleType,
     pub x: i32, // 0..60 ft
     pub y: i32, // 0..40 ft
     pub radius_ft: i32, // ex: 4 ou 5
     pub mechanical_effect: String, // ex: "+2 CA (Cobertura Parcial)", "Armadilha: 1d6 perfurante"
+}
+
+impl SceneObstacle {
+    /// Converte coordenada do obstáculo em pés para posição no grid
+    pub fn grid_position(&self) -> crate::map::grid::GridPosition {
+        crate::map::grid::GridPosition::new(self.x / 5, self.y / 5)
+    }
+
+    /// Converte ObstacleType para TerrainType do motor de mapa
+    pub fn to_terrain_type(&self) -> crate::map::grid::TerrainType {
+        match self.obstacle_type {
+            ObstacleType::Cover => crate::map::grid::TerrainType::CoverHalf,
+            ObstacleType::Chokepoint => crate::map::grid::TerrainType::CoverThreeQuarters,
+            ObstacleType::DifficultTerrain => crate::map::grid::TerrainType::Difficult,
+            ObstacleType::Hazard => crate::map::grid::TerrainType::Hazard {
+                save_dc: 12,
+                damage_dice: "1d6".to_string(),
+                condition: None,
+            },
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,7 +198,7 @@ pub struct SceneInteractionTurn {
     pub turn_number: u32,
     pub actor_id: String,
     pub actor_name: String,
-    pub via_type: String, // "via1", "via2", "via3"
+    pub via_type: ViaType,
     pub player_input: String,
     pub mechanical_intent: Option<serde_json::Value>,
     pub rules_result: Option<serde_json::Value>,
@@ -115,7 +211,7 @@ pub struct SceneLootItem {
     pub name: String,
     pub item_type: String, // "Arma Mágica", "Armadura", "Poção", "Relíquia", "Pergaminho", "Minério"
     pub description: String,
-    pub rarity: String, // "Comum", "Incomum", "Raro", "Muito Raro", "Lendário"
+    pub rarity: crate::rules::equipment::magic_items::Rarity,
     pub mechanical_bonus: Option<String>,
     pub location_hint: String,
     pub is_claimed: bool,
@@ -159,6 +255,10 @@ pub struct LivingScene {
     pub in_combat: bool,
     #[serde(default)]
     pub obstacles: Vec<SceneObstacle>,
+    #[serde(default)]
+    pub xp_awarded: bool,
+    #[serde(default)]
+    pub total_xp_awarded: u32,
 }
 
 impl LivingScene {
@@ -195,7 +295,7 @@ impl LivingScene {
             SceneObstacle {
                 id: "obs_cover_1".to_string(),
                 name: cover1_name.to_string(),
-                obstacle_type: "cover".to_string(),
+                obstacle_type: ObstacleType::Cover,
                 x: 25,
                 y: 12,
                 radius_ft: 4,
@@ -204,7 +304,7 @@ impl LivingScene {
             SceneObstacle {
                 id: "obs_cover_2".to_string(),
                 name: cover2_name.to_string(),
-                obstacle_type: "cover".to_string(),
+                obstacle_type: ObstacleType::Cover,
                 x: 30,
                 y: 28,
                 radius_ft: 4,
@@ -213,7 +313,7 @@ impl LivingScene {
             SceneObstacle {
                 id: "obs_hazard_1".to_string(),
                 name: hazard_name.to_string(),
-                obstacle_type: "hazard".to_string(),
+                obstacle_type: ObstacleType::Hazard,
                 x: 35,
                 y: 20,
                 radius_ft: 4,
@@ -222,7 +322,7 @@ impl LivingScene {
             SceneObstacle {
                 id: "obs_terrain_1".to_string(),
                 name: terrain_name.to_string(),
-                obstacle_type: "difficult_terrain".to_string(),
+                obstacle_type: ObstacleType::DifficultTerrain,
                 x: 22,
                 y: 22,
                 radius_ft: 5,
@@ -231,7 +331,7 @@ impl LivingScene {
             SceneObstacle {
                 id: "obs_choke_1".to_string(),
                 name: choke_name.to_string(),
-                obstacle_type: "chokepoint".to_string(),
+                obstacle_type: ObstacleType::Chokepoint,
                 x: 15,
                 y: 5,
                 radius_ft: 4,
@@ -278,6 +378,8 @@ impl LivingScene {
             world_prologue: None,
             in_combat: true,
             obstacles,
+            xp_awarded: false,
+            total_xp_awarded: 0,
         }
     }
 

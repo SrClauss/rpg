@@ -10,14 +10,55 @@ pub mod wands_staffs_rods;
 pub mod weapons;
 pub mod wondrous_items;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Rarity {
+    #[serde(alias = "common", alias = "comum", alias = "Comum")]
     Common,
+    #[serde(alias = "uncommon", alias = "incomum", alias = "Incomum")]
     Uncommon,
+    #[serde(alias = "rare", alias = "raro", alias = "rara", alias = "Raro", alias = "Rara")]
     Rare,
+    #[serde(alias = "very_rare", alias = "muito_raro", alias = "muito_rara", alias = "Muito Raro", alias = "Muito Rara")]
     VeryRare,
+    #[serde(alias = "legendary", alias = "lendario", alias = "lendaria", alias = "Lendário", alias = "Lendária")]
     Legendary,
+    #[serde(alias = "artifact", alias = "artefato", alias = "Artefato")]
     Artifact,
+}
+
+impl Rarity {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Rarity::Common => "common",
+            Rarity::Uncommon => "uncommon",
+            Rarity::Rare => "rare",
+            Rarity::VeryRare => "very_rare",
+            Rarity::Legendary => "legendary",
+            Rarity::Artifact => "artifact",
+        }
+    }
+}
+
+impl std::fmt::Display for Rarity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for Rarity {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().trim() {
+            "common" | "comum" => Ok(Rarity::Common),
+            "uncommon" | "incomum" => Ok(Rarity::Uncommon),
+            "rare" | "raro" | "rara" => Ok(Rarity::Rare),
+            "very_rare" | "very rare" | "muito raro" | "muito rara" => Ok(Rarity::VeryRare),
+            "legendary" | "lendario" | "lendário" | "lendaria" | "lendária" => Ok(Rarity::Legendary),
+            "artifact" | "artefato" => Ok(Rarity::Artifact),
+            other => Err(format!("Raridade inválida: {}", other)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

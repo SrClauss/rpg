@@ -98,7 +98,9 @@ impl RulesResolver {
         match action {
             "skill_check" => Self::resolve_skill_check(payload, state, entity_store),
             "ability_check" => Self::resolve_ability_check(payload, state, entity_store),
+            "saving_throw" => Self::resolve_saving_throw(payload, state, entity_store),
             "attack" => Self::resolve_attack_with_scene(payload, state, scene, entity_store),
+            "cast_spell" | "heal" => Self::resolve_spell_cast(payload, state, scene, entity_store),
             _ => json!({
                 "status": "error",
                 "message": format!("Ação mecânica '{}' não reconhecida", action)
@@ -191,6 +193,103 @@ impl RulesResolver {
             "total": check.roll_result.total,
             "dc": dc,
             "is_success": check.is_success.unwrap_or(true)
+        })
+    }
+
+    fn resolve_saving_throw(
+        payload: &Value,
+        state: &mut CampaignState,
+        entity_store: Option<&EntityStore>,
+    ) -> Value {
+        let ability_str = payload["ability"].as_str().unwrap_or("Dexterity");
+        let dc = payload["dc"].as_i64().map(|v| v as i32);
+        let actor_name = payload["actor"].as_str().unwrap_or("Jogador");
+        let actor_id = payload["actor_id"].as_str();
+        let is_proficient = payload["is_proficient"].as_bool().unwrap_or(false);
+
+        let ability = match ability_str.to_lowercase().as_str() {
+            "strength" | "str" | "força" => Ability::Strength,
+            "constitution" | "con" | "constituição" => Ability::Constitution,
+            "intelligence" | "int" | "inteligência" => Ability::Intelligence,
+            "wisdom" | "wis" | "sabedoria" => Ability::Wisdom,
+            "charisma" | "cha" | "carisma" => Ability::Charisma,
+            _ => Ability::Dexterity,
+        };
+
+        let fallback_store = state.get_entity_store().ok();
+        let effective_store = entity_store.or(fallback_store.as_ref());
+        let entity = Self::create_entity_from_store(actor_name, actor_id, effective_store);
+        let check = crate::rules::checks::roll_saving_throw(&entity, ability, is_proficient, DiceMode::Normal, dc);
+
+        json!({
+            "status": "success",
+            "action": "saving_throw",
+            "actor": actor_name,
+            "ability": format!("{:?}", ability),
+            "d20_roll": check.roll_result.selected_roll,
+            "modifier": check.roll_result.modifier,
+            "total": check.roll_result.total,
+            "dc": dc,
+            "is_success": check.is_success.unwrap_or(true)
+        })
+    }
+
+    fn resolve_spell_cast(
+        payload: &Value,
+        state: &mut CampaignState,
+        scene: Option<&mut LivingScene>,
+        entity_store: Option<&EntityStore>,
+    ) -> Value {
+        let caster_name = payload["actor"].as_str().unwrap_or("Conjurador");
+        let caster_id = payload["actor_id"].as_str();
+        let spell_name = payload["spell"].as_str().unwrap_or("Cure Wounds");
+        let fallback_store = state.get_entity_store().ok();
+        let effective_store = entity_store.or(fallback_store.as_ref());
+
+        let mut caster_entity = Self::create_entity_from_store(caster_name, caster_id, effective_store);
+        let spell = crate::rules::spells::registry::SpellRegistry::get_spell(spell_name)
+            .unwrap_or_else(crate::rules::spells::spell::create_cure_wounds);
+
+        let target_name = payload["target"].as_str().unwrap_or(caster_name);
+        let mut target_entity = Self::create_entity_from_store(target_name, None, effective_store);
+
+        let cast_res = crate::rules::spells::casting::cast_spell(
+            &mut caster_entity,
+            Some(&mut target_entity),
+            &spell,
+            Ability::Wisdom,
+            false,
+            DiceMode::Normal,
+            crate::rules::combat::attack::DamageAffinity::Normal,
+        );
+
+        let mut heal_amount = 0;
+        let mut new_hp = target_entity.current_hp;
+        let mut max_hp = target_entity.get_max_hp();
+
+        if let crate::rules::spells::casting::CastOutcome::Healed { amount } = cast_res.outcome {
+            heal_amount = amount;
+            if let Some(sc) = scene {
+                if let Some(p) = sc.participants.iter_mut().find(|p| p.name.eq_ignore_ascii_case(target_name) || caster_id.map(|id| p.id == id).unwrap_or(false)) {
+                    max_hp = p.max_hp.max(12);
+                    p.current_hp = (p.current_hp + heal_amount).min(max_hp);
+                    if p.current_hp > 0 { p.is_dead = false; }
+                    new_hp = p.current_hp;
+                }
+            }
+        }
+
+        json!({
+            "status": "success",
+            "action": "heal",
+            "spell": spell.name,
+            "actor": caster_name,
+            "target": target_name,
+            "heal_amount": heal_amount,
+            "total": heal_amount,
+            "target_hp_remaining": new_hp,
+            "target_max_hp": max_hp,
+            "is_success": true
         })
     }
 

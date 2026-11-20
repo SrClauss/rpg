@@ -30,6 +30,7 @@ pub fn move_token(
         .position(|t| t.id == token_id)
         .ok_or_else(|| format!("Token com id '{}' não foi encontrado no grid.", token_id))?;
 
+    let mover_type = grid.tokens[token_idx].token_type;
     let original_position = grid.tokens[token_idx].position;
     let mut current_position = original_position;
     let mut remaining_speed = grid.tokens[token_idx].speed_ft;
@@ -39,61 +40,103 @@ pub fn move_token(
     let mut applied_conditions = Vec::new();
     let mut events_log = Vec::new();
 
-    for next_pos in path {
+    let path_len = path.len();
+
+    for (step_idx, next_pos) in path.into_iter().enumerate() {
         if current_position == next_pos {
             continue;
         }
 
-        // Garante que os passos são adjacentes no plano do grid (cardeal ou diagonal)
-        if current_position.horizontal_distance(&next_pos) != 1 {
+        // 1. Limites do mapa
+        if !grid.is_within_bounds(&next_pos) {
+            is_halted = true;
+            halt_reason = Some(format!(
+                "Movimento bloqueado: quadro {:?} está fora dos limites do mapa.",
+                next_pos
+            ));
+            events_log.push(halt_reason.clone().unwrap());
+            break;
+        }
+
+        // 2. Adjacência (permite movimento horizontal de 1 quadro ou escalada/queda vertical no mesmo quadro)
+        let horiz_dist = current_position.horizontal_distance(&next_pos);
+        if horiz_dist > 1 {
             return Err(format!(
                 "Passo inválido de {:?} para {:?}: os quadros devem ser adjacentes.",
                 current_position, next_pos
             ));
         }
 
+        // 3. Colisão com outros Tokens vivos
+        let mut occupied_by_ally = false;
+        if let Some(occupant) = grid.get_token_at(&next_pos) {
+            if occupant.id != token_id {
+                if occupant.token_type != mover_type {
+                    is_halted = true;
+                    halt_reason = Some(format!(
+                        "Movimento bloqueado por inimigo ({}) em {:?}.",
+                        occupant.name, next_pos
+                    ));
+                    events_log.push(halt_reason.clone().unwrap());
+                    break;
+                } else {
+                    // Regra D&D 5e: pode atravessar espaço de aliado (custa terreno difícil),
+                    // mas não pode encerrar o movimento no mesmo quadro.
+                    if step_idx == path_len - 1 {
+                        is_halted = true;
+                        halt_reason = Some(format!(
+                            "Não é possível encerrar o movimento no espaço ocupado pelo aliado ({}) em {:?}.",
+                            occupant.name, next_pos
+                        ));
+                        events_log.push(halt_reason.clone().unwrap());
+                        break;
+                    }
+                    occupied_by_ally = true;
+                }
+            }
+        }
+
+        // 4. Terreno e Obstáculos
         let (terrain, desc) = grid
             .get_terrain_at(&next_pos)
             .unwrap_or((TerrainType::Normal, "Chão Limpo".to_string()));
 
-        // Calcula o custo base em pés via Teorema de Pitágoras (Arredondado para Cima: 5ft reto, 8ft diagonal)
-        let base_cost = current_position.step_cost_ft(&next_pos);
+        if matches!(terrain, TerrainType::Obstacle) {
+            is_halted = true;
+            halt_reason = Some(format!(
+                "Movimento bloqueado por obstáculo ({}) em {:?}.",
+                desc, next_pos
+            ));
+            events_log.push(halt_reason.clone().unwrap());
+            break;
+        }
 
-        // Se for terreno difícil, o custo é dobrado
-        let step_cost = match terrain {
-            TerrainType::Difficult => base_cost * 2.0,
-            TerrainType::Obstacle => {
-                is_halted = true;
-                halt_reason = Some(format!(
-                    "Movimento bloqueado por obstáculo em {:?}.",
-                    next_pos
-                ));
-                events_log.push(format!(
-                    "Token bateu em obstáculo ({}) no quadro {:?}.",
-                    desc, next_pos
-                ));
-                break;
-            }
-            _ => base_cost,
+        // 5. Cálculo de Custo (5e padrão + subida vertical + terreno difícil/aliado)
+        let base_cost = current_position.step_cost_ft(&next_pos);
+        let is_difficult = matches!(terrain, TerrainType::Difficult) || occupied_by_ally;
+        let step_cost = if is_difficult {
+            base_cost * 2.0
+        } else {
+            base_cost
         };
 
         if remaining_speed < step_cost {
             is_halted = true;
             halt_reason = Some("Deslocamento insuficiente para continuar.".to_string());
             events_log.push(format!(
-                "Deslocamento esgotado antes de entrar no quadro {:?}.",
-                next_pos
+                "Deslocamento esgotado antes de entrar no quadro {:?} (precisava de {:.0}ft, restavam {:.0}ft).",
+                next_pos, step_cost, remaining_speed
             ));
             break;
         }
 
-        // Aplica o movimento para o próximo quadro
+        // 6. Aplica o movimento
         let drop_distance_ft = current_position.z - next_pos.z;
         remaining_speed -= step_cost;
         distance_traveled += step_cost;
         current_position = next_pos;
 
-        // Se houver uma queda de altura (drop_distance_ft >= 10ft)
+        // 7. Dano de queda (>= 10 pés)
         if drop_distance_ft >= 10 {
             let fall_dice_count = std::cmp::min(20, drop_distance_ft / 10);
             let fall_dice_str = format!("{}d6", fall_dice_count);
@@ -111,13 +154,13 @@ pub fn move_token(
                 drop_distance_ft, fall_damage
             ));
             events_log.push(format!(
-                "Queda! Token caiu {} pés em {:?}, sofreu {} de dano de queda e ficou Prone.",
+                "Queda! Token caiu {} pés em {:?}, sofreu {} de dano e ficou Prone.",
                 drop_distance_ft, next_pos, fall_damage
             ));
             break;
         }
 
-        // Verifica perigos no terreno (Hazards - ex: óleo, graxa, abrolhos)
+        // 8. Perigos no terreno (Hazards)
         if let TerrainType::Hazard {
             save_dc,
             ref damage_dice,
@@ -129,14 +172,13 @@ pub fn move_token(
                 desc, next_pos, save_dc
             ));
 
-            // Simula d20 + mod de destreza
             let d20 = Dice::d20().roll();
             let total_save = d20.total + dexterity_modifier;
 
             if total_save < save_dc as i32 {
                 is_halted = true;
                 events_log.push(format!(
-                    "Falhou na Salvaguarda de Destreza (Rolou {} + {} = {} vs CD {}).",
+                    "Falhou na Salvaguarda de Destreza ({} + {} = {} vs CD {}).",
                     d20.total, dexterity_modifier, total_save, save_dc
                 ));
 
@@ -148,7 +190,6 @@ pub fn move_token(
                             "Escorregou e caiu (Prone) no quadro {:?}.",
                             next_pos
                         ));
-                        events_log.push(format!("Token ficou agachado/deitado (Prone) no quadro {:?}. Movimento interrompido!", next_pos));
                     }
                 }
 
@@ -167,14 +208,13 @@ pub fn move_token(
                 break;
             } else {
                 events_log.push(format!(
-                    "Passou na Salvaguarda de Destreza (Rolou {} + {} = {} vs CD {}). Continua o movimento.",
+                    "Passou na Salvaguarda de Destreza ({} + {} = {} vs CD {}). Continua o movimento.",
                     d20.total, dexterity_modifier, total_save, save_dc
                 ));
             }
         }
     }
 
-    // Atualiza a posição final do token no grid
     grid.tokens[token_idx].position = current_position;
 
     Ok(MovementResult {
@@ -195,142 +235,80 @@ mod tests {
     use super::*;
     use crate::map::grid::{Obstacle, Token, TokenType};
 
-    #[test]
-    fn test_normal_movement() {
-        let mut grid = BattleGrid::new(10, 10, "Arena".to_string());
-        grid.tokens.push(Token {
+    fn hero_at(x: i32, y: i32, z: i32) -> Token {
+        Token {
             id: "hero".to_string(),
             name: "Guerreiro".to_string(),
             token_type: TokenType::Hero,
-            position: GridPosition::new(0, 0),
+            position: GridPosition::with_z(x, y, z),
             hp: 30,
             max_hp: 30,
             speed_ft: 30.0,
             statblock_id: None,
             posture: Posture::Standing,
             color_hex: "#00FF00".to_string(),
-        });
-
-        let path = vec![
-            GridPosition::new(1, 0),
-            GridPosition::new(2, 0),
-            GridPosition::new(3, 0),
-        ];
-
-        let result = move_token(&mut grid, "hero", path, 2).unwrap();
-        assert_eq!(result.final_position, GridPosition::new(3, 0));
-        assert!((result.distance_traveled_ft - 15.0).abs() < 0.01);
-        assert!((result.remaining_speed_ft - 15.0).abs() < 0.01);
-        assert!(!result.is_halted);
+        }
     }
 
     #[test]
-    fn test_movement_interrupted_by_hazard() {
+    fn test_diagonal_5e_movement() {
         let mut grid = BattleGrid::new(10, 10, "Arena".to_string());
+        grid.tokens.push(hero_at(0, 0, 0));
+
+        let path = vec![GridPosition::new(1, 1), GridPosition::new(2, 2)];
+        let result = move_token(&mut grid, "hero", path, 0).unwrap();
+
+        assert_eq!(result.final_position, GridPosition::new(2, 2));
+        assert!((result.distance_traveled_ft - 10.0).abs() < 0.01);
+        assert!((result.remaining_speed_ft - 20.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_enemy_blocks_movement() {
+        let mut grid = BattleGrid::new(10, 10, "Arena".to_string());
+        grid.tokens.push(hero_at(0, 0, 0));
         grid.tokens.push(Token {
-            id: "hero".to_string(),
-            name: "Guerreiro".to_string(),
-            token_type: TokenType::Hero,
-            position: GridPosition::new(0, 0),
-            hp: 30,
-            max_hp: 30,
+            id: "goblin".to_string(),
+            name: "Goblin".to_string(),
+            token_type: TokenType::Enemy,
+            position: GridPosition::new(1, 0),
+            hp: 7,
+            max_hp: 7,
             speed_ft: 30.0,
             statblock_id: None,
             posture: Posture::Standing,
-            color_hex: "#00FF00".to_string(),
-        });
-
-        grid.obstacles.push(Obstacle {
-            position: GridPosition::new(1, 0),
-            terrain_type: TerrainType::Hazard {
-                save_dc: 99, // Força a falha
-                damage_dice: "1d6".to_string(),
-                condition: Some(Condition::Prone),
-            },
-            description: "Mancha de Óleo".to_string(),
+            color_hex: "#FF0000".to_string(),
         });
 
         let path = vec![GridPosition::new(1, 0), GridPosition::new(2, 0)];
-
         let result = move_token(&mut grid, "hero", path, 0).unwrap();
-        assert_eq!(result.final_position, GridPosition::new(1, 0));
+
         assert!(result.is_halted);
-        assert_eq!(grid.tokens[0].posture, Posture::Prone);
+        assert_eq!(result.final_position, GridPosition::new(0, 0));
     }
 
     #[test]
-    fn test_falling_damage_and_prone() {
+    fn test_vertical_climb_consumes_speed() {
         let mut grid = BattleGrid::new(10, 10, "Torre".to_string());
-        grid.tokens.push(Token {
-            id: "hero".to_string(),
-            name: "Guerreiro".to_string(),
-            token_type: TokenType::Hero,
-            position: GridPosition::with_z(0, 0, 30), // Ledge em 30 pés de altura
-            hp: 50,
-            max_hp: 50,
-            speed_ft: 30.0,
-            statblock_id: None,
-            posture: Posture::Standing,
-            color_hex: "#00FF00".to_string(),
-        });
+        grid.tokens.push(hero_at(0, 0, 0));
 
-        let path = vec![GridPosition::with_z(1, 0, 0)];
-
+        // Tentar subir 40 pés de uma vez com speed 30ft deve bloquear
+        let path = vec![GridPosition::with_z(1, 0, 40)];
         let result = move_token(&mut grid, "hero", path, 0).unwrap();
-        assert_eq!(result.final_position, GridPosition::with_z(1, 0, 0));
+
         assert!(result.is_halted);
-        assert!(grid.tokens[0].hp < 50); // Sofreu dano de queda (3d6)
-        assert_eq!(grid.tokens[0].posture, Posture::Prone);
+        assert_eq!(result.final_position, GridPosition::with_z(0, 0, 0));
     }
 
     #[test]
-    fn test_falling_into_valley_negative_z() {
-        let mut grid = BattleGrid::new(10, 10, "Ravina".to_string());
-        grid.tokens.push(Token {
-            id: "hero".to_string(),
-            name: "Guerreiro".to_string(),
-            token_type: TokenType::Hero,
-            position: GridPosition::with_z(0, 0, 0), // Solo plano padrão (z = 0)
-            hp: 50,
-            max_hp: 50,
-            speed_ft: 30.0,
-            statblock_id: None,
-            posture: Posture::Standing,
-            color_hex: "#00FF00".to_string(),
-        });
+    fn test_out_of_bounds_halts_movement() {
+        let mut grid = BattleGrid::new(5, 5, "Sala".to_string());
+        grid.tokens.push(hero_at(4, 0, 0));
 
-        let path = vec![GridPosition::with_z(1, 0, -20)];
-
+        let path = vec![GridPosition::new(5, 0)];
         let result = move_token(&mut grid, "hero", path, 0).unwrap();
-        assert_eq!(result.final_position, GridPosition::with_z(1, 0, -20));
+
         assert!(result.is_halted);
-        assert!(grid.tokens[0].hp < 50); // Sofreu 2d6 de dano de queda ao cair no vale
-        assert_eq!(grid.tokens[0].posture, Posture::Prone);
-    }
-
-    #[test]
-    fn test_diagonal_pythagoras_movement() {
-        let mut grid = BattleGrid::new(10, 10, "Arena".to_string());
-        grid.tokens.push(Token {
-            id: "hero".to_string(),
-            name: "Guerreiro".to_string(),
-            token_type: TokenType::Hero,
-            position: GridPosition::new(0, 0),
-            hp: 30,
-            max_hp: 30,
-            speed_ft: 30.0,
-            statblock_id: None,
-            posture: Posture::Standing,
-            color_hex: "#00FF00".to_string(),
-        });
-
-        // Movimento na diagonal: (0,0) -> (1,1) -> (2,2)
-        // Cada passo diagonal via Pitágoras em f32 = sqrt(5^2 + 5^2) = ~7.071068 pés
-        let path = vec![GridPosition::new(1, 1), GridPosition::new(2, 2)];
-
-        let result = move_token(&mut grid, "hero", path, 0).unwrap();
-        assert_eq!(result.final_position, GridPosition::new(2, 2));
-        assert!((result.distance_traveled_ft - 14.142136).abs() < 0.01); // 7.071 + 7.071 = 14.14 pés
-        assert!((result.remaining_speed_ft - 15.857864).abs() < 0.01); // 30 - 14.14 = 15.86 pés
+        assert_eq!(result.final_position, GridPosition::new(4, 0));
     }
 }

@@ -1,13 +1,17 @@
 use crate::llm::gemini::GeminiClient;
 use crate::narrative::entity_store::EntityStore;
 use crate::narrative::living_scene::{
-    LivingScene, SceneInteractionTurn, SceneLootItem, SceneObjective, SceneResolutionReason, TurnParticipant,
+    LivingScene, SceneInteractionTurn, SceneLootItem, SceneObjective, SceneResolutionReason,
+    TurnParticipant, ViaType,
 };
+use crate::rules::character::advancement::Advancement;
+use crate::rules::equipment::magic_items::Rarity;
 use crate::rules::resolver::RulesResolver;
 use crate::state::CampaignState;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::error::Error;
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EnvironmentTurnOutput {
@@ -243,7 +247,10 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
                                 name: item["name"].as_str().unwrap_or("Relíquia Desconhecida").to_string(),
                                 item_type: item["item_type"].as_str().unwrap_or("Relíquia").to_string(),
                                 description: item["description"].as_str().unwrap_or("Encontrado nas profundezas do cenário").to_string(),
-                                rarity: item["rarity"].as_str().unwrap_or("Incomum").to_string(),
+                                rarity: item["rarity"]
+                                    .as_str()
+                                    .and_then(|r| Rarity::from_str(r).ok())
+                                    .unwrap_or(Rarity::Uncommon),
                                 mechanical_bonus: item["mechanical_bonus"].as_str().map(|s| s.to_string()),
                                 location_hint: item["location_hint"].as_str().unwrap_or("No cenário").to_string(),
                                 is_hidden: item["is_hidden"].as_bool().unwrap_or(true),
@@ -258,7 +265,7 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
                             name: "Cota de Malha de Mithral dos Anões".to_string(),
                             item_type: "Armadura".to_string(),
                             description: "Armadura forjada nas veias profundas da montanha; leve, não impõe desvantagem em Furtividade.".to_string(),
-                            rarity: "Incomum".to_string(),
+                            rarity: Rarity::Uncommon,
                             mechanical_bonus: Some("CA 16 sem desvantagem em Furtividade".to_string()),
                             location_hint: "Em um baú de pedra esquecido nas galerias da mina".to_string(),
                             is_hidden: true,
@@ -270,7 +277,7 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
                             name: "Poção de Cura Superior".to_string(),
                             item_type: "Poção".to_string(),
                             description: "Frasco de cristal espesso contendo um líquido escarlate brilhante.".to_string(),
-                            rarity: "Rara".to_string(),
+                            rarity: Rarity::Rare,
                             mechanical_bonus: Some("Restaura 8d4 + 8 Pontos de Vida".to_string()),
                             location_hint: "No estojo de couro de um batedor caído".to_string(),
                             is_hidden: true,
@@ -371,6 +378,97 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
             return true;
         }
         false
+    }
+
+    /// Calcula e concede XP do D&D 5e para os heróis da comitiva ao derrotar monstros
+    pub fn award_combat_xp(
+        scene: &mut LivingScene,
+        entity_store: &EntityStore,
+    ) -> (u32, u32) {
+        if scene.xp_awarded {
+            return (scene.total_xp_awarded, 0);
+        }
+
+        // Calcula XP total de todos os inimigos hostis da cena
+        let mut total_xp: u32 = 0;
+        for p in &scene.participants {
+            if !p.is_player && p.is_hostile {
+                let name_lower = p.name.to_lowercase();
+                let xp_val = if name_lower.contains("chefe")
+                    || name_lower.contains("lider")
+                    || name_lower.contains("líder")
+                    || name_lower.contains("boss")
+                    || name_lower.contains("comandante")
+                    || p.max_hp >= 20
+                {
+                    200 // Mini-chefe / Desafio 1 (D&D 5e: 200 XP)
+                } else if name_lower.contains("batedor")
+                    || name_lower.contains("scout")
+                    || name_lower.contains("cão")
+                    || name_lower.contains("cao")
+                    || name_lower.contains("kobold")
+                    || name_lower.contains("goblin")
+                {
+                    50 // Lacaio / Desafio 1/4 (D&D 5e: 50 XP)
+                } else {
+                    100 // Monstro padrão / Desafio 1/2 (D&D 5e: 100 XP)
+                };
+                total_xp = total_xp.saturating_add(xp_val);
+            }
+        }
+
+        if total_xp == 0 {
+            total_xp = 50; // Fallback mínimo por vitória
+        }
+
+        // Obtém lista de heróis do jogador
+        let players = entity_store.list_player_entities().unwrap_or_default();
+        let num_heroes = players.len().max(1) as u32;
+        let xp_per_hero = (total_xp / num_heroes).max(25);
+
+        for mut player in players {
+            let cur_xp = player
+                .custom_flags
+                .get("xp")
+                .and_then(|v| v.as_u64())
+                .or_else(|| {
+                    player
+                        .custom_flags
+                        .get("full_sheet")
+                        .and_then(|fs| fs.get("experiencePoints"))
+                        .and_then(|v| v.as_u64())
+                })
+                .unwrap_or(0) as u32;
+
+            let new_xp = cur_xp.saturating_add(xp_per_hero);
+            let cur_level = player
+                .custom_flags
+                .get("level")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(1) as u8;
+
+            let new_level = Advancement::level_for_xp(new_xp).max(cur_level);
+
+            player.custom_flags.insert("xp".to_string(), json!(new_xp));
+            player.custom_flags.insert("level".to_string(), json!(new_level));
+
+            if let Some(fs) = player.custom_flags.get_mut("full_sheet") {
+                if let Some(obj) = fs.as_object_mut() {
+                    obj.insert("experiencePoints".to_string(), json!(new_xp));
+                    obj.insert("level".to_string(), json!(new_level));
+                }
+            }
+
+            let _ = entity_store.save_player_entity(&player);
+            println!(
+                ">>> [XP D&D 5E] Concedido +{} XP para {} (Total: {} XP, Nível: {})",
+                xp_per_hero, player.name, new_xp, new_level
+            );
+        }
+
+        scene.xp_awarded = true;
+        scene.total_xp_awarded = total_xp;
+        (total_xp, xp_per_hero)
     }
 
     /// Avança para o próximo jogador vivo na ordem de iniciativa, executando ataques reais e movimentação de todos os NPCs/inimigos entre eles
@@ -674,6 +772,7 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
 
                     if Self::check_and_apply_combat_victory(scene) {
                         victory_achieved = true;
+                        Self::award_combat_xp(scene, entity_store);
                     }
                 }
             }
@@ -694,8 +793,6 @@ Você DEVE responder APENAS com um JSON puro válido no seguinte formato:
         state: &mut CampaignState,
         entity_store: &EntityStore,
     ) -> Result<EnvironmentTurnOutput, Box<dyn Error>> {
-        use rand::Rng;
-
         // 1. Coleta contexto das entidades do mundo presentes na cena e seus modificadores contra o ator
         let world_entities = entity_store.list_world_entities().unwrap_or_default();
         let mut entity_contexts = Vec::new();
@@ -966,12 +1063,25 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
         let mut fled_successfully = false;
 
         if is_flee {
-            let mut rng = rand::thread_rng();
-            let d20: i32 = rng.gen_range(1..=20);
-            let mod_val: i32 = 3;
-            let total = d20 + mod_val;
             let dc = 12;
-            let is_success = d20 == 20 || (d20 != 1 && total >= dc);
+            let flee_payload = json!({
+                "action": "skill_check",
+                "skill": "Athletics",
+                "actor": actor_name,
+                "actor_id": actor_id,
+                "dc": dc
+            });
+            let resolved = RulesResolver::resolve_with_scene(
+                &flee_payload,
+                state,
+                Some(scene),
+                Some(entity_store),
+            );
+
+            let d20 = resolved["d20_roll"].as_i64().unwrap_or(10) as i32;
+            let mod_val = resolved["modifier"].as_i64().unwrap_or(3) as i32;
+            let total = resolved["total"].as_i64().unwrap_or(13) as i32;
+            let is_success = resolved["is_success"].as_bool().unwrap_or(total >= dc);
 
             if is_success {
                 scene.in_combat = false;
@@ -999,7 +1109,7 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
                 "status": "success",
                 "action": "flee",
                 "actor": actor_name,
-                "skill": "Athletics/Stealth",
+                "skill": "Athletics",
                 "d20_roll": d20,
                 "modifier": mod_val,
                 "total": total,
@@ -1008,48 +1118,33 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
                 "combat_ended": is_success
             }));
         } else if is_heal {
-            let mut rng = rand::thread_rng();
-            let roll_d8: i32 = rng.gen_range(1..=8);
-            let heal_amount = roll_d8 + 3;
-            let mut new_hp = 12;
-            let mut max_hp = 12;
+            let heal_payload = json!({
+                "action": "heal",
+                "actor": actor_name,
+                "actor_id": actor_id,
+                "spell": "Cure Wounds",
+                "target": actor_name
+            });
+            let resolved = RulesResolver::resolve_with_scene(
+                &heal_payload,
+                state,
+                Some(scene),
+                Some(entity_store),
+            );
 
-            if let Some(p) = scene.participants.iter_mut().find(|p| {
-                p.id == actor_id || p.name.eq_ignore_ascii_case(actor_name)
-            }) {
-                max_hp = p.max_hp.max(12);
-                p.current_hp = (p.current_hp + heal_amount).min(max_hp);
-                if p.current_hp > 0 {
-                    p.is_dead = false;
-                }
-                new_hp = p.current_hp;
-            }
+            let heal_amount = resolved["heal_amount"].as_i64().unwrap_or(7) as i32;
+            let new_hp = resolved["target_hp_remaining"].as_i64().unwrap_or(12) as i32;
+            let max_hp = resolved["target_max_hp"].as_i64().unwrap_or(12) as i32;
 
             Self::sync_player_hp_to_store(entity_store, actor_id, actor_name, new_hp);
 
             player_text = format!(
-                "{} [💚 D&D 5e Cura (1d8+3): +{} PV => {}/{} PV]",
+                "{} [💚 D&D 5e Cura (Cure Wounds): +{} PV => {}/{} PV]",
                 player_text, heal_amount, new_hp, max_hp
             );
 
-            mechanical_intent = Some(json!({
-                "action": "heal",
-                "actor": actor_name,
-                "actor_id": actor_id
-            }));
-            rules_result = Some(json!({
-                "status": "success",
-                "action": "heal",
-                "actor": actor_name,
-                "target": actor_name,
-                "d20_roll": roll_d8,
-                "modifier": 3,
-                "total": heal_amount,
-                "heal_amount": heal_amount,
-                "target_hp_remaining": new_hp,
-                "target_max_hp": max_hp,
-                "is_success": true
-            }));
+            mechanical_intent = Some(heal_payload);
+            rules_result = Some(resolved);
         } else if is_weapon_or_offensive_attack && scene.participants.iter().any(|p| !p.is_player && p.is_hostile) {
             let target_hint = mechanical_intent
                 .as_ref()
@@ -1208,10 +1303,17 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
             }
         }
 
+        let (total_xp, xp_per_hero) = if victory_achieved {
+            Self::award_combat_xp(scene, entity_store)
+        } else {
+            (0, 0)
+        };
+
         if victory_achieved {
-            narrative_reaction.push_str(
-                "\n\n🏆 **[VITÓRIA TÁTICA! Todos os inimigos hostis foram abatidos! O campo de batalha está seguro para exploração e saque.]**",
-            );
+            narrative_reaction.push_str(&format!(
+                "\n\n🏆 **[VITÓRIA TÁTICA! Todos os inimigos hostis foram abatidos!]**\n⭐ **[RECOMPENSA D&D 5e]: O grupo conquistou +{} XP para cada aventureiro (Total do combate: {} XP)!**\n🎒 *O campo de batalha está seguro e aberto para exploração, saque e investigação. Quando estiver pronto, use o botão 'Concluir Cena' para avançar a história.*",
+                xp_per_hero, total_xp
+            ));
         }
 
         // 8. Checagem de objetivos cumpridos
@@ -1223,14 +1325,15 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
             }
         }
 
-        // 9. Checagem de resolução da cena respeitando a Trava de Batalha (só sai se derrotou todos os hostis ou se passou no teste de Fuga CD 12)
+        // 9. Checagem de resolução da cena respeitando a Trava de Batalha
+        // Vitória mantém a Cena Viva aberta em modo exploração livre, aguardando que o jogador clique em 'Concluir Cena'
         let mut scene_res = if fled_successfully {
             Some(SceneResolutionReason::PartyDeparted)
         } else if !scene.participants.iter().any(|p| p.is_player && !p.is_dead && p.current_hp > 0) {
             scene.in_combat = false;
             Some(SceneResolutionReason::PartyDefeated)
         } else {
-            scene.check_completion()
+            None
         };
 
         if scene_res.is_none()
@@ -1241,11 +1344,12 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
         }
 
         // 10. Registra turno no histórico da Cena Viva
+        let typed_via = ViaType::from_str(via_type).unwrap_or(ViaType::Via1);
         let turn_record = SceneInteractionTurn {
             turn_number: scene.turn_history.len() as u32 + 1,
             actor_id: actor_id.to_string(),
             actor_name: actor_name.to_string(),
-            via_type: via_type.to_string(),
+            via_type: typed_via,
             player_input: player_input.to_string(),
             mechanical_intent: mechanical_intent.clone(),
             rules_result: rules_result.clone(),
@@ -1321,5 +1425,129 @@ Você DEVE responder APENAS com um JSON puro no seguinte formato:
             "party_departed": false,
             "memory_impacts": []
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::narrative::entity_store::{EntityDndStats, EntityType, WorldEntitySheet};
+    use crate::narrative::living_scene::{ActionsBudget, TurnParticipant};
+
+    #[test]
+    fn test_award_combat_xp_distribution_and_level_up() {
+        let test_dir = std::env::temp_dir().join(format!("test_rpg_xp_{}", uuid::Uuid::new_v4()));
+        let store = EntityStore::new(&test_dir).unwrap();
+
+        // Cria herói nível 1 com 0 XP
+        let mut hero = WorldEntitySheet::new("hero_1", "Grommash", EntityType::Player, "Guerreiro");
+        hero.dnd_stats = Some(EntityDndStats::default());
+        hero.custom_flags.insert("xp".to_string(), json!(0));
+        hero.custom_flags.insert("level".to_string(), json!(1));
+        store.save_player_entity(&hero).unwrap();
+
+        let mut scene = LivingScene::new(
+            "camp_test",
+            "Batalha na Entrada",
+            "Floresta",
+            1,
+            vec![],
+            vec![
+                TurnParticipant {
+                    id: "hero_1".to_string(),
+                    name: "Grommash".to_string(),
+                    is_player: true,
+                    is_hostile: false,
+                    initiative: 15,
+                    initiative_roll: 13,
+                    initiative_modifier: 2,
+                    current_hp: 20,
+                    max_hp: 20,
+                    armor_class: 16,
+                    is_dead: false,
+                    actions_budget: ActionsBudget::default(),
+                    position: Some((10, 20)),
+                    token_role: Some("Fighter".to_string()),
+                },
+                TurnParticipant {
+                    id: "goblin_1".to_string(),
+                    name: "Goblin Batedor".to_string(),
+                    is_player: false,
+                    is_hostile: true,
+                    initiative: 12,
+                    initiative_roll: 10,
+                    initiative_modifier: 2,
+                    current_hp: 0,
+                    max_hp: 7,
+                    armor_class: 13,
+                    is_dead: true,
+                    actions_budget: ActionsBudget::default(),
+                    position: Some((30, 20)),
+                    token_role: Some("Inimigo".to_string()),
+                },
+                TurnParticipant {
+                    id: "boss_1".to_string(),
+                    name: "Chefe Goblin Klarg".to_string(),
+                    is_player: false,
+                    is_hostile: true,
+                    initiative: 8,
+                    initiative_roll: 7,
+                    initiative_modifier: 1,
+                    current_hp: 0,
+                    max_hp: 25,
+                    armor_class: 15,
+                    is_dead: true,
+                    actions_budget: ActionsBudget::default(),
+                    position: Some((40, 20)),
+                    token_role: Some("Chefe".to_string()),
+                },
+            ],
+        );
+
+        let (total_xp, per_hero) = EnvironmentAgent::award_combat_xp(&mut scene, &store);
+        // 50 (batedor) + 200 (chefe) = 250 XP
+        assert_eq!(total_xp, 250);
+        assert_eq!(per_hero, 250);
+        assert!(scene.xp_awarded);
+        assert_eq!(scene.total_xp_awarded, 250);
+
+        // Verifica que o herói recebeu o XP no EntityStore
+        let updated_hero = store.get_player_entity("hero_1").unwrap().unwrap();
+        assert_eq!(updated_hero.custom_flags["xp"], json!(250));
+        assert_eq!(updated_hero.custom_flags["level"], json!(1)); // 250 < 300 (nível 2)
+
+        // Se conceder mais 100 XP (passando de 300 XP), deve subir para nível 2!
+        scene.xp_awarded = false;
+        let mut second_scene = LivingScene::new(
+            "camp_test",
+            "Emboscada Seguinte",
+            "Trilha",
+            1,
+            vec![],
+            vec![TurnParticipant {
+                id: "orc_1".to_string(),
+                name: "Guerreiro Orc".to_string(),
+                is_player: false,
+                is_hostile: true,
+                initiative: 10,
+                initiative_roll: 9,
+                initiative_modifier: 1,
+                current_hp: 0,
+                max_hp: 15,
+                armor_class: 13,
+                is_dead: true,
+                actions_budget: ActionsBudget::default(),
+                position: Some((20, 20)),
+                token_role: Some("Inimigo".to_string()),
+            }],
+        );
+
+        let (tot2, per2) = EnvironmentAgent::award_combat_xp(&mut second_scene, &store);
+        assert_eq!(tot2, 100);
+        assert_eq!(per2, 100);
+
+        let hero_after = store.get_player_entity("hero_1").unwrap().unwrap();
+        assert_eq!(hero_after.custom_flags["xp"], json!(350));
+        assert_eq!(hero_after.custom_flags["level"], json!(2)); // 350 >= 300 -> Nível 2!
     }
 }

@@ -60,7 +60,7 @@ async fn test_full_campaign_living_scene_flow() {
         vec![TargetSpecificModifier {
             target_actor_id: "player_rogue".to_string(),
             dc_adjustment: 5,
-            dice_mode: Some("Disadvantage".to_string()),
+            dice_mode: Some(rpg_engine::dice::DiceMode::Disadvantage),
             reason: "Desconfiança do ladino que fugiu".to_string(),
         }],
     );
@@ -70,7 +70,7 @@ async fn test_full_campaign_living_scene_flow() {
     let loaded_joao = entity_store.get_world_entity("joao").unwrap().unwrap();
     let (dc_adj, dice_mode) = loaded_joao.get_modifiers_against("player_rogue");
     assert_eq!(dc_adj, 5);
-    assert_eq!(dice_mode, Some("Disadvantage".to_string()));
+    assert_eq!(dice_mode, Some(rpg_engine::dice::DiceMode::Disadvantage));
 
     // Contra outro jogador não deve haver penalidade
     let (dc_adj_other, dice_mode_other) = loaded_joao.get_modifiers_against("player_paladin");

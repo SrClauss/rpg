@@ -56,7 +56,7 @@ impl Default for EntityDndStats {
 pub struct TargetSpecificModifier {
     pub target_actor_id: String,
     pub dc_adjustment: i32,
-    pub dice_mode: Option<String>, // "Advantage", "Disadvantage"
+    pub dice_mode: Option<crate::dice::DiceMode>,
     pub reason: String,
 }
 
@@ -113,7 +113,7 @@ impl WorldEntitySheet {
     }
 
     /// Calcula os modificadores acumulados quando interagindo com um ator específico
-    pub fn get_modifiers_against(&self, actor_id: &str) -> (i32, Option<String>) {
+    pub fn get_modifiers_against(&self, actor_id: &str) -> (i32, Option<crate::dice::DiceMode>) {
         let mut total_dc_adj = 0;
         let mut dice_mode = None;
 
@@ -121,8 +121,8 @@ impl WorldEntitySheet {
             for modifier in &impact.target_modifiers {
                 if modifier.target_actor_id == actor_id || modifier.target_actor_id == "*" {
                     total_dc_adj += modifier.dc_adjustment;
-                    if let Some(ref mode) = modifier.dice_mode {
-                        dice_mode = Some(mode.clone());
+                    if let Some(mode) = modifier.dice_mode {
+                        dice_mode = Some(mode);
                     }
                 }
             }

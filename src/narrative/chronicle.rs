@@ -167,14 +167,27 @@ impl ChronicleBook {
         Ok(entries)
     }
 
-    /// Retorna as N entradas mais recentes
+    /// Retorna as N entradas mais recentes utilizando busca direta por offset em O(count)
     pub fn get_recent_entries(&self, count: usize) -> Result<Vec<ChronicleEntry>, Error> {
-        let all = self.get_all_entries()?;
-        let total = all.len();
-        if total <= count {
-            Ok(all)
-        } else {
-            Ok(all[total - count..].to_vec())
+        if !self.log_file_path.exists() || count == 0 || self.offset_index.is_empty() {
+            return Ok(Vec::new());
         }
+
+        // Ordena os event_ids para identificar as últimas N entradas registradas
+        let mut event_ids: Vec<&String> = self.offset_index.keys().collect();
+        event_ids.sort();
+
+        let start_idx = event_ids.len().saturating_sub(count);
+        let target_ids = &event_ids[start_idx..];
+
+        let mut entries = Vec::with_capacity(target_ids.len());
+        for id in target_ids {
+            if let Some(entry) = self.get_entry_by_id(id)? {
+                entries.push(entry);
+            }
+        }
+
+        Ok(entries)
     }
 }
+

@@ -5,3 +5,4 @@ pub mod map;
 pub mod rules;
 pub mod narrative;
 pub mod auth;
+pub mod api;

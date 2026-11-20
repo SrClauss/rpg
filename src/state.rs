@@ -1,10 +1,7 @@
 use crate::map::grid::BattleGrid;
-use crate::narrative::beat::{Beat, Premise};
 use crate::narrative::chronicle::ChronicleBook;
 use crate::narrative::entity_store::EntityStore;
-use crate::narrative::graph::{NarrativeEdge, NarrativeNode};
 use crate::narrative::living_scene::LivingScene;
-use crate::narrative::memory::ContextualMemory;
 use crate::narrative::skeleton::NarrativeSkeleton;
 use crate::narrative::telemetry::{EntityStats, EventLog};
 use serde::{Deserialize, Serialize};
@@ -72,21 +69,11 @@ pub struct CampaignState {
     // 1. Estado Tático
     pub battle_grid: Option<BattleGrid>,
 
-    // 2. Estado Narrativo e Grafos
-    pub nodes: Vec<NarrativeNode>,
-    pub edges: Vec<NarrativeEdge>,
-
-    // 3. Histórico e Memória
-    pub contextual_memory: Vec<ContextualMemory>,
+    // 2. Histórico e Telemetria
     pub event_logs: Vec<EventLog>,
 
-    // 4. Estatísticas de Partida
+    // 3. Estatísticas de Partida
     pub entity_stats: HashMap<String, EntityStats>,
-
-    // 5. Premissa e Beats (Motor Narrativo Legado / Compatibilidade)
-    pub premise: Option<Premise>,
-    pub beats: Vec<Beat>,
-    pub current_beat_index: u32,
 }
 
 impl Default for CampaignState {
@@ -107,14 +94,8 @@ impl CampaignState {
             active_scene: None,
             world_prologue: None,
             battle_grid: None,
-            nodes: Vec::new(),
-            edges: Vec::new(),
-            contextual_memory: Vec::new(),
             event_logs: Vec::new(),
             entity_stats: HashMap::new(),
-            premise: None,
-            beats: Vec::new(),
-            current_beat_index: 0,
         }
     }
 
@@ -126,14 +107,8 @@ impl CampaignState {
             active_scene: None,
             world_prologue: None,
             battle_grid: None,
-            nodes: Vec::new(),
-            edges: Vec::new(),
-            contextual_memory: Vec::new(),
             event_logs: Vec::new(),
             entity_stats: HashMap::new(),
-            premise: None,
-            beats: Vec::new(),
-            current_beat_index: 0,
         }
     }
 
@@ -251,66 +226,5 @@ impl CampaignState {
 
         let state: CampaignState = bincode::deserialize(&buffer)?;
         Ok(state)
-    }
-
-    /// Inicia um novo Beat na campanha e incrementa o índice atual
-    pub fn start_new_beat(&mut self, title: &str, beat_type: crate::narrative::beat::BeatType) -> uuid::Uuid {
-        self.current_beat_index += 1;
-        let beat = Beat::new(self.current_beat_index, title, beat_type);
-        let id = beat.id;
-        self.beats.push(beat);
-        id
-    }
-
-    pub fn current_beat_mut(&mut self) -> Option<&mut Beat> {
-        self.beats.last_mut()
-    }
-
-    pub fn current_beat(&self) -> Option<&Beat> {
-        self.beats.last()
-    }
-
-    pub fn record_mutation(
-        &mut self,
-        entity_name: &str,
-        entity_type: crate::narrative::beat::EntityMutationType,
-        field_changed: &str,
-        old_value: &str,
-        new_value: &str,
-        reason: &str,
-    ) -> Result<(), String> {
-        let current_beat = self.beats.last_mut().ok_or_else(|| {
-            "Não há nenhum Beat ativo na campanha para registrar mutações.".to_string()
-        })?;
-
-        let mutation = crate::narrative::beat::EntityMutation::new(
-            entity_name,
-            entity_type,
-            current_beat.id,
-            field_changed,
-            old_value,
-            new_value,
-            reason,
-        );
-
-        current_beat.entity_mutations.push(mutation);
-        Ok(())
-    }
-
-    pub fn close_current_beat(&mut self, summary: &str) -> Result<(), String> {
-        let current_beat = self.beats.last_mut().ok_or_else(|| {
-            "Não há nenhum Beat ativo para fechar.".to_string()
-        })?;
-
-        current_beat.summary = summary.to_string();
-        Ok(())
-    }
-
-    pub fn get_entity_mutation_history(&self, entity_name: &str) -> Vec<&crate::narrative::beat::EntityMutation> {
-        self.beats
-            .iter()
-            .flat_map(|b| b.entity_mutations.iter())
-            .filter(|m| m.entity_name == entity_name)
-            .collect()
     }
 }
